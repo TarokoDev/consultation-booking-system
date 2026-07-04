@@ -12,7 +12,7 @@ router.post("/login", async (req, res) => {
   }
 
   const result = await pool.query(
-    "SELECT id, name, email, password_hash, role FROM users WHERE email = $1",
+    "SELECT id, title, first_name, middle_name, last_name, email, password_hash, role FROM users WHERE email = $1",
     [email]
   );
   const user = result.rows[0];
@@ -34,7 +34,15 @@ router.post("/login", async (req, res) => {
   });
 
   res.json({
-    user: { id: user.id, name: user.name, email: user.email, role: user.role },
+    user: {
+      id: user.id,
+      title: user.title,
+      first_name: user.first_name,
+      middle_name: user.middle_name,
+      last_name: user.last_name,
+      email: user.email,
+      role: user.role,
+    },
   });
 });
 
@@ -45,7 +53,7 @@ router.post("/logout", (req, res) => {
 
 router.get("/me", requireAuth, async (req, res) => {
   const result = await pool.query(
-    "SELECT id, name, email, role FROM users WHERE id = $1",
+    "SELECT id, title, first_name, middle_name, last_name, email, role FROM users WHERE id = $1",
     [req.user!.id]
   );
   res.json({ user: result.rows[0] });

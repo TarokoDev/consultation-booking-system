@@ -1,12 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
-
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  const first = parts[0]?.[0] ?? "";
-  const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
-  return (first + last).toUpperCase();
-}
+import { formatFullName, getInitials } from "../utils/formatName";
 
 export function Navbar() {
   const { user, logout } = useAuth();
@@ -38,10 +32,10 @@ export function Navbar() {
             className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-gray-100"
           >
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-600 text-sm font-semibold text-white">
-              {getInitials(user.name)}
+              {getInitials(user)}
             </span>
             <span className="text-left text-sm">
-              <span className="block font-medium text-gray-900">{user.name}</span>
+              <span className="block font-medium text-gray-900">{formatFullName(user)}</span>
               <span className="block text-xs capitalize text-gray-500">{user.role}</span>
             </span>
           </button>
