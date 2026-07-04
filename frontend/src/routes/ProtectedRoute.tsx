@@ -1,6 +1,7 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import type { Role } from "../api/types";
+import { Navbar } from "../components/Navbar";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -22,5 +23,10 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     return <Navigate to={`/${user.role}`} replace />;
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <Navbar />
+      {children}
+    </>
+  );
 }
