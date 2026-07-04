@@ -33,14 +33,22 @@ async function seed() {
   // Standard SG clinic hours: Mon-Fri 08:00-13:00 + 14:00-17:00 (lunch
   // break), Sat 08:00-13:00, closed Sunday. 30-min blocks, 3-week window
   // (today through +20 days).
-  const WINDOW = `generate_series(date_trunc('day', now()), date_trunc('day', now()) + interval '20 days', interval '1 day') AS day`;
+  //
+  // `day` is computed as a naive timestamp representing SGT wall-clock
+  // midnight (via `now() AT TIME ZONE 'Asia/Singapore'`). Each slot's
+  // wall-clock time is built on top of that naive value, then the whole
+  // expression is converted back with `AT TIME ZONE 'Asia/Singapore'` so
+  // the stored TIMESTAMPTZ is the correct UTC instant for "08:00 in
+  // Singapore" rather than "08:00 UTC" (which would render as 4:00 PM
+  // in a Singapore-local browser).
+  const WINDOW = `generate_series(date_trunc('day', now() AT TIME ZONE 'Asia/Singapore'), date_trunc('day', now() AT TIME ZONE 'Asia/Singapore') + interval '20 days', interval '1 day') AS day`;
 
   // Weekday mornings: 08:00-12:30 start (10 slots)
   await pool.query(`
     INSERT INTO slots (doctor_id, start_time, end_time)
     SELECT d.id,
-           day + interval '8 hours' + (n * interval '30 minutes'),
-           day + interval '8 hours' + (n * interval '30 minutes') + interval '30 minutes'
+           (day + interval '8 hours' + (n * interval '30 minutes')) AT TIME ZONE 'Asia/Singapore',
+           (day + interval '8 hours' + (n * interval '30 minutes') + interval '30 minutes') AT TIME ZONE 'Asia/Singapore'
     FROM users d, ${WINDOW}, generate_series(0, 9) AS n
     WHERE d.role = 'doctor' AND EXTRACT(DOW FROM day) BETWEEN 1 AND 5
     ON CONFLICT (doctor_id, start_time) DO NOTHING
@@ -50,8 +58,8 @@ async function seed() {
   await pool.query(`
     INSERT INTO slots (doctor_id, start_time, end_time)
     SELECT d.id,
-           day + interval '14 hours' + (n * interval '30 minutes'),
-           day + interval '14 hours' + (n * interval '30 minutes') + interval '30 minutes'
+           (day + interval '14 hours' + (n * interval '30 minutes')) AT TIME ZONE 'Asia/Singapore',
+           (day + interval '14 hours' + (n * interval '30 minutes') + interval '30 minutes') AT TIME ZONE 'Asia/Singapore'
     FROM users d, ${WINDOW}, generate_series(0, 5) AS n
     WHERE d.role = 'doctor' AND EXTRACT(DOW FROM day) BETWEEN 1 AND 5
     ON CONFLICT (doctor_id, start_time) DO NOTHING
@@ -61,8 +69,8 @@ async function seed() {
   await pool.query(`
     INSERT INTO slots (doctor_id, start_time, end_time)
     SELECT d.id,
-           day + interval '8 hours' + (n * interval '30 minutes'),
-           day + interval '8 hours' + (n * interval '30 minutes') + interval '30 minutes'
+           (day + interval '8 hours' + (n * interval '30 minutes')) AT TIME ZONE 'Asia/Singapore',
+           (day + interval '8 hours' + (n * interval '30 minutes') + interval '30 minutes') AT TIME ZONE 'Asia/Singapore'
     FROM users d, ${WINDOW}, generate_series(0, 9) AS n
     WHERE d.role = 'doctor' AND EXTRACT(DOW FROM day) = 6
     ON CONFLICT (doctor_id, start_time) DO NOTHING
