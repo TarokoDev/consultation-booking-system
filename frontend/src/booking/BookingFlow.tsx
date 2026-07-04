@@ -10,6 +10,8 @@ import { BookingSuccess } from "./BookingSuccess";
 import { BookingError } from "./BookingError";
 import type { Step } from "./types";
 
+const STEP_ORDER: Step[] = ["doctor-select", "date-select", "slot-select", "confirm-booking"];
+
 export function BookingFlow() {
   const [step, setStep] = useState<Step>("doctor-select");
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
@@ -17,6 +19,13 @@ export function BookingFlow() {
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
   const [isConflictModalOpen, setIsConflictModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const stepIndex = STEP_ORDER.indexOf(step);
+  const canGoBack = stepIndex > 0;
+
+  function goBack() {
+    if (stepIndex > 0) setStep(STEP_ORDER[stepIndex - 1]);
+  }
 
   function resetToStart() {
     setSelectedDoctor(null);
@@ -45,6 +54,18 @@ export function BookingFlow() {
 
   return (
     <div>
+      <div className="mx-auto flex w-full max-w-lg items-center p-4 pb-0">
+        {canGoBack && (
+          <button
+            type="button"
+            onClick={goBack}
+            className="btn btn-ghost btn-sm min-h-[44px] px-2"
+          >
+            &larr; Go back
+          </button>
+        )}
+      </div>
+
       {step === "doctor-select" && (
         <DoctorSelect
           onSelect={(doctor) => {
@@ -62,7 +83,6 @@ export function BookingFlow() {
             setSelectedDate(date);
             setStep("slot-select");
           }}
-          onBackToDoctors={() => setStep("doctor-select")}
         />
       )}
 
@@ -74,8 +94,6 @@ export function BookingFlow() {
             setSelectedSlot(slot);
             setStep("confirm-booking");
           }}
-          onBackToDates={() => setStep("date-select")}
-          onBackToDoctors={() => setStep("doctor-select")}
         />
       )}
 
@@ -86,9 +104,6 @@ export function BookingFlow() {
             date={selectedDate}
             slot={selectedSlot}
             isSubmitting={isSubmitting}
-            onEditDoctor={() => setStep("doctor-select")}
-            onEditDate={() => setStep("date-select")}
-            onEditSlot={() => setStep("slot-select")}
             onCancel={resetToStart}
             onConfirm={handleConfirm}
           />

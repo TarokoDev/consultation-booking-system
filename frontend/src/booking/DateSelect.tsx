@@ -9,10 +9,9 @@ interface Props {
   doctor: Doctor;
   selectedDate: Date | null;
   onViewSlots: (date: Date) => void;
-  onBackToDoctors: () => void;
 }
 
-export function DateSelect({ doctor, selectedDate, onViewSlots, onBackToDoctors }: Props) {
+export function DateSelect({ doctor, selectedDate, onViewSlots }: Props) {
   const [date, setDate] = useState<Date | undefined>(selectedDate ?? undefined);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
@@ -53,9 +52,6 @@ export function DateSelect({ doctor, selectedDate, onViewSlots, onBackToDoctors 
           className="btn btn-primary min-h-[44px] w-full"
         >
           View Slots
-        </button>
-        <button type="button" onClick={onBackToDoctors} className="btn btn-outline min-h-[44px] w-full">
-          Back to Doctors
         </button>
       </div>
     </div>

@@ -8,11 +8,9 @@ interface Props {
   doctor: Doctor;
   date: Date;
   onSelectSlot: (slot: Slot) => void;
-  onBackToDates: () => void;
-  onBackToDoctors: () => void;
 }
 
-export function SlotSelect({ doctor, date, onSelectSlot, onBackToDates, onBackToDoctors }: Props) {
+export function SlotSelect({ doctor, date, onSelectSlot }: Props) {
   const [slots, setSlots] = useState<Slot[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -42,9 +40,6 @@ export function SlotSelect({ doctor, date, onSelectSlot, onBackToDates, onBackTo
             <button type="button" onClick={fetchSlots} className="btn btn-primary min-h-[44px] w-full">
               View Slots
             </button>
-            <button type="button" onClick={onBackToDoctors} className="btn btn-outline min-h-[44px] w-full">
-              Back to Doctors
-            </button>
           </div>
         </div>
       ) : (
@@ -61,9 +56,6 @@ export function SlotSelect({ doctor, date, onSelectSlot, onBackToDates, onBackTo
               </button>
             ))}
           </div>
-          <button type="button" onClick={onBackToDates} className="btn btn-outline min-h-[44px] w-full">
-            Back to dates
-          </button>
         </div>
       )}
     </div>

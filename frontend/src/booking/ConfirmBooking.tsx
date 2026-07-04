@@ -7,9 +7,6 @@ interface Props {
   date: Date;
   slot: Slot;
   isSubmitting: boolean;
-  onEditDoctor: () => void;
-  onEditDate: () => void;
-  onEditSlot: () => void;
   onCancel: () => void;
   onConfirm: () => void;
 }
@@ -19,9 +16,6 @@ export function ConfirmBooking({
   date,
   slot,
   isSubmitting,
-  onEditDoctor,
-  onEditDate,
-  onEditSlot,
   onCancel,
   onConfirm,
 }: Props) {
@@ -32,21 +26,12 @@ export function ConfirmBooking({
       <div className="space-y-2 rounded-lg border border-gray-200 p-3">
         <div className="flex items-center justify-between">
           <span>Doctor: {formatFullName(doctor)}</span>
-          <button type="button" onClick={onEditDoctor} className="link link-primary text-sm">
-            Edit
-          </button>
         </div>
         <div className="flex items-center justify-between">
           <span>Date: {formatLongDate(date)}</span>
-          <button type="button" onClick={onEditDate} className="link link-primary text-sm">
-            Edit
-          </button>
         </div>
         <div className="flex items-center justify-between">
           <span>Slot: {formatSlotTime(slot.start_time)}</span>
-          <button type="button" onClick={onEditSlot} className="link link-primary text-sm">
-            Edit
-          </button>
         </div>
       </div>
 
