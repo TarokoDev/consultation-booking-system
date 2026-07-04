@@ -29,13 +29,8 @@ export function DoctorSelect({ onSelect }: Props) {
           <label
             key={doctor.id}
             className="flex min-h-[44px] cursor-pointer items-center gap-3 rounded-lg border border-gray-200 p-3 hover:bg-gray-50"
+            onClick={() => onSelect(doctor)}
           >
-            <input
-              type="radio"
-              name="doctor"
-              className="radio radio-primary shrink-0"
-              onChange={() => onSelect(doctor)}
-            />
             <span>
               <span className="block font-medium text-gray-900">{formatFullName(doctor)}</span>
               <span className="block text-sm text-gray-500">{doctor.specialty}</span>
