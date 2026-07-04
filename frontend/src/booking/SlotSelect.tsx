@@ -1,0 +1,71 @@
+import { useEffect, useState, useCallback } from "react";
+import { getSlots } from "../api/client";
+import type { Doctor, Slot } from "../api/types";
+import { formatFullName } from "../utils/formatName";
+import { formatLongDate, formatSlotTime, toDateParam } from "./types";
+
+interface Props {
+  doctor: Doctor;
+  date: Date;
+  onSelectSlot: (slot: Slot) => void;
+  onBackToDates: () => void;
+  onBackToDoctors: () => void;
+}
+
+export function SlotSelect({ doctor, date, onSelectSlot, onBackToDates, onBackToDoctors }: Props) {
+  const [slots, setSlots] = useState<Slot[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchSlots = useCallback(() => {
+    setIsLoading(true);
+    getSlots(doctor.id, toDateParam(date))
+      .then(({ slots }) => setSlots(slots))
+      .finally(() => setIsLoading(false));
+  }, [doctor.id, date]);
+
+  useEffect(() => {
+    fetchSlots();
+  }, [fetchSlots]);
+
+  return (
+    <div className="mx-auto w-full max-w-lg space-y-4 p-4">
+      <h2 className="text-lg font-semibold">
+        {formatFullName(doctor)} - {formatLongDate(date)}
+      </h2>
+
+      {isLoading ? (
+        <div className="p-4 text-sm text-gray-500">Loading slots...</div>
+      ) : slots.length === 0 ? (
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">No slots available for this date</p>
+          <div className="space-y-2">
+            <button type="button" onClick={fetchSlots} className="btn btn-primary min-h-[44px] w-full">
+              View Slots
+            </button>
+            <button type="button" onClick={onBackToDoctors} className="btn btn-outline min-h-[44px] w-full">
+              Back to Doctors
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {slots.map((slot) => (
+              <button
+                key={slot.id}
+                type="button"
+                onClick={() => onSelectSlot(slot)}
+                className="btn btn-outline min-h-[44px]"
+              >
+                {formatSlotTime(slot.start_time)}
+              </button>
+            ))}
+          </div>
+          <button type="button" onClick={onBackToDates} className="btn btn-outline min-h-[44px] w-full">
+            Back to dates
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
