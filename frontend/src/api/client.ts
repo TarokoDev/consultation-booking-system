@@ -55,13 +55,13 @@ export async function getPatientUpcomingBookings() {
 }
 
 export async function cancelBooking(id: number) {
-  const res = await http.patch<{ message: string }>(`/bookings/${id}/cancel`);
+  const res = await http.patch<{ message: string }>(`/bookings/patient/${id}/cancel`);
   return res.data;
 }
 
 export async function getBookedTimes(date: string) {
   const res = await http.get<{ bookedTimes: { start_time: string; end_time: string }[] }>(
-    "/bookings/booked-times",
+    "/bookings/patient/booked-times",
     { params: { date } }
   );
   return res.data;
@@ -90,6 +90,6 @@ export async function getDoctorPastBookings() {
 }
 
 export async function markBookingComplete(id: number) {
-  const res = await http.patch<{ message: string }>(`/bookings/${id}/complete`);
+  const res = await http.patch<{ message: string }>(`/bookings/doctor/${id}/complete`);
   return res.data;
 }
