@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cookieParser from "cookie-parser";
+import cors from "cors";
 import authRouter from "./features/auth/auth.routes";
 import doctorsRouter from "./features/doctors/doctors.routes";
 import slotsRouter from "./features/slots/slots.routes";
@@ -9,6 +10,12 @@ import bookingsRouter from "./features/bookings/bookings.routes";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL,
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(cookieParser());
 
