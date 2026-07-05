@@ -83,4 +83,17 @@ router.get("/upcoming", requireAuth, requireRole("patient"), async (req, res) =>
   return res.json({ bookings: result.rows });
 });
 
+router.patch("/:id/cancel", requireAuth, requireRole("patient"), async (req, res) => {
+  const { id } = req.params;
+
+  const result = await pool.query(
+    `UPDATE bookings SET status = 'cancelled' WHERE id = $1 AND patient_id = $2 AND status = 'confirmed' AND deleted_at IS NULL`,
+    [id, req.user!.id]
+  );
+  if (result.rowCount === 0) {
+    return res.status(404).json({ error: "Booking not found" });
+  }
+  return res.json({ message: "Booking cancelled" });
+});
+
 export default router;
