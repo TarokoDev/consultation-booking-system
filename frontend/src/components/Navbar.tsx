@@ -22,7 +22,7 @@ export function Navbar() {
   return (
     <div className="navbar bg-base-100 shadow-sm px-4">
       <div className="navbar-start">
-        <span className="text-lg font-semibold">Consultation Booking</span>
+        <span className="text-lg font-semibold">Consultation Booking System</span>
       </div>
       <div className="navbar-end">
         <div ref={menuRef} className="relative">
