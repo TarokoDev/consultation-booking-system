@@ -31,3 +31,18 @@ export interface Booking {
   status: "confirmed" | "cancelled" | "completed";
   created_at: string;
 }
+
+export interface BookingWithSlot {
+  id: number;
+  status: "confirmed" | "cancelled" | "completed";
+  created_at: string;
+  slot_id: number;
+  start_time: string;
+  end_time: string;
+  doctor_id: number;
+  doctor_title: string | null;
+  doctor_first_name: string;
+  doctor_middle_name: string | null;
+  doctor_last_name: string;
+  doctor_specialty: string | null;
+}

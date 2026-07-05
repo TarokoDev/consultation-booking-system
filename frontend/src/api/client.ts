@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { Booking, Doctor, Slot, User } from "./types";
+import type { Booking, BookingWithSlot, Doctor, Slot, User } from "./types";
 
 export class ApiError extends Error {
   status?: number;
@@ -46,5 +46,10 @@ export async function getSlots(doctorId: number, date: string) {
 
 export async function createBooking(slotId: number) {
   const res = await http.post<{ booking: Booking }>("/bookings", { slotId });
+  return res.data;
+}
+
+export async function getUpcomingBookings() {
+  const res = await http.get<{ bookings: BookingWithSlot[] }>("/bookings/upcoming");
   return res.data;
 }
