@@ -71,7 +71,9 @@ router.post("/", requireAuth, requireRole("patient"), async (req, res) => {
   }
 });
 
-router.get("/upcoming", requireAuth, requireRole("patient"), async (req, res) => {
+// --- Patient routes ---
+
+router.get("/patient/upcoming", requireAuth, requireRole("patient"), async (req, res) => {
   const result = await pool.query(
     `SELECT
        b.id,
@@ -94,6 +96,33 @@ router.get("/upcoming", requireAuth, requireRole("patient"), async (req, res) =>
        AND s.start_time > now()
        AND b.deleted_at IS NULL
      ORDER BY s.start_time ASC`,
+    [req.user!.id]
+  );
+  return res.json({ bookings: result.rows });
+});
+
+router.get("/patient/past", requireAuth, requireRole("patient"), async (req, res) => {
+  const result = await pool.query(
+    `SELECT
+       b.id,
+       b.status,
+       b.created_at,
+       s.id AS slot_id,
+       s.start_time,
+       s.end_time,
+       d.id AS doctor_id,
+       d.title AS doctor_title,
+       d.first_name AS doctor_first_name,
+       d.middle_name AS doctor_middle_name,
+       d.last_name AS doctor_last_name,
+       d.specialty AS doctor_specialty
+     FROM bookings b
+     JOIN slots s ON b.slot_id = s.id
+     JOIN users d ON s.doctor_id = d.id
+     WHERE b.patient_id = $1
+       AND b.status IN ('completed', 'cancelled')
+       AND b.deleted_at IS NULL
+     ORDER BY s.start_time DESC`,
     [req.user!.id]
   );
   return res.json({ bookings: result.rows });
@@ -130,7 +159,9 @@ router.patch("/:id/cancel", requireAuth, requireRole("patient"), async (req, res
   return res.json({ message: "Booking cancelled" });
 });
 
-router.get("/past", requireAuth, requireRole("patient"), async (req, res) => {
+// --- Doctor routes ---
+
+router.get("/doctor/upcoming", requireAuth, requireRole("doctor"), async (req, res) => {
   const result = await pool.query(
     `SELECT
        b.id,
@@ -139,22 +170,70 @@ router.get("/past", requireAuth, requireRole("patient"), async (req, res) => {
        s.id AS slot_id,
        s.start_time,
        s.end_time,
-       d.id AS doctor_id,
-       d.title AS doctor_title,
-       d.first_name AS doctor_first_name,
-       d.middle_name AS doctor_middle_name,
-       d.last_name AS doctor_last_name,
-       d.specialty AS doctor_specialty
+       p.id AS patient_id,
+       p.title AS patient_title,
+       p.first_name AS patient_first_name,
+       p.middle_name AS patient_middle_name,
+       p.last_name AS patient_last_name
      FROM bookings b
      JOIN slots s ON b.slot_id = s.id
-     JOIN users d ON s.doctor_id = d.id
-     WHERE b.patient_id = $1
-       AND b.status IN ('completed', 'cancelled')
+     JOIN users p ON b.patient_id = p.id
+     WHERE s.doctor_id = $1
+       AND b.status = 'confirmed'
+       AND s.start_time > now()
+       AND b.deleted_at IS NULL
+     ORDER BY s.start_time ASC`,
+    [req.user!.id]
+  );
+  return res.json({ bookings: result.rows });
+});
+
+router.get("/doctor/past", requireAuth, requireRole("doctor"), async (req, res) => {
+  const result = await pool.query(
+    `SELECT
+       b.id,
+       b.status,
+       b.created_at,
+       s.id AS slot_id,
+       s.start_time,
+       s.end_time,
+       p.id AS patient_id,
+       p.title AS patient_title,
+       p.first_name AS patient_first_name,
+       p.middle_name AS patient_middle_name,
+       p.last_name AS patient_last_name
+     FROM bookings b
+     JOIN slots s ON b.slot_id = s.id
+     JOIN users p ON b.patient_id = p.id
+     WHERE s.doctor_id = $1
+       AND b.status IN ('confirmed', 'completed', 'cancelled')
+       AND s.start_time <= now()
        AND b.deleted_at IS NULL
      ORDER BY s.start_time DESC`,
     [req.user!.id]
   );
   return res.json({ bookings: result.rows });
+});
+
+router.patch("/:id/complete", requireAuth, requireRole("doctor"), async (req, res) => {
+  const { id } = req.params;
+
+  // Backend enforces: only slots that have already started can be marked complete
+  const result = await pool.query(
+    `UPDATE bookings b SET status = 'completed'
+     FROM slots s
+     WHERE b.slot_id = s.id
+       AND b.id = $1
+       AND s.doctor_id = $2
+       AND b.status = 'confirmed'
+       AND s.start_time <= now()
+       AND b.deleted_at IS NULL`,
+    [id, req.user!.id]
+  );
+  if (result.rowCount === 0) {
+    return res.status(404).json({ error: "Booking not found or not eligible to complete" });
+  }
+  return res.json({ message: "Booking marked as completed" });
 });
 
 export default router;
