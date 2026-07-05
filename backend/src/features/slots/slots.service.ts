@@ -1,15 +1,6 @@
-import { Router } from "express";
-import { pool } from "../db";
-import { requireAuth } from "../auth";
+import { pool } from "../../db";
 
-const router = Router();
-
-router.get("/", requireAuth, async (req, res) => {
-  const { doctorId, date } = req.query;
-  if (!doctorId || !date) {
-    return res.status(400).json({ error: "doctorId and date are required" });
-  }
-
+export async function getAvailableSlots(doctorId: string, date: string) {
   const result = await pool.query(
     `SELECT s.id, s.start_time, s.end_time
      FROM slots s
@@ -25,7 +16,5 @@ router.get("/", requireAuth, async (req, res) => {
      ORDER BY s.start_time`,
     [doctorId, date]
   );
-  res.json({ slots: result.rows });
-});
-
-export default router;
+  return result.rows;
+}

@@ -1,10 +1,10 @@
 import "dotenv/config";
 import express from "express";
 import cookieParser from "cookie-parser";
-import authRouter from "./routes/auth";
-import doctorsRouter from "./routes/doctors";
-import slotsRouter from "./routes/slots";
-import bookingsRouter from "./routes/bookings";
+import authRouter from "./features/auth/auth.routes";
+import doctorsRouter from "./features/doctors/doctors.routes";
+import slotsRouter from "./features/slots/slots.routes";
+import bookingsRouter from "./features/bookings/bookings.routes";
 
 const app = express();
 const PORT = process.env.PORT || 3000;

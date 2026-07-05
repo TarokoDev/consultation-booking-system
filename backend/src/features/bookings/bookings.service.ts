@@ -1,15 +1,20 @@
-import { Router } from "express";
-import { pool } from "../db";
-import { requireAuth, requireRole } from "../auth";
+import { pool } from "../../db";
 
-const router = Router();
-
-router.post("/", requireAuth, requireRole("patient"), async (req, res) => {
-  const { slotId } = req.body;
-  if (!slotId) {
-    return res.status(400).json({ error: "slotId is required" });
+export class BookingConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "BookingConflictError";
   }
+}
 
+export class BookingNotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "BookingNotFoundError";
+  }
+}
+
+export async function createBooking(slotId: number, patientId: number) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -20,7 +25,7 @@ router.post("/", requireAuth, requireRole("patient"), async (req, res) => {
     );
     if (slotResult.rows.length === 0) {
       await client.query("ROLLBACK");
-      return res.status(404).json({ error: "Slot not found" });
+      throw new BookingNotFoundError("Slot not found");
     }
 
     const existing = await client.query(
@@ -30,7 +35,7 @@ router.post("/", requireAuth, requireRole("patient"), async (req, res) => {
     );
     if (existing.rows.length > 0) {
       await client.query("ROLLBACK");
-      return res.status(409).json({ error: "This slot is already booked" });
+      throw new BookingConflictError("This slot is already booked");
     }
 
     const { start_time, end_time } = slotResult.rows[0];
@@ -42,46 +47,38 @@ router.post("/", requireAuth, requireRole("patient"), async (req, res) => {
          AND b.deleted_at IS NULL
          AND s.start_time < $3
          AND s.end_time > $2`,
-      [req.user!.id, start_time, end_time]
+      [patientId, start_time, end_time]
     );
     if (overlap.rows.length > 0) {
       await client.query("ROLLBACK");
-      return res.status(409).json({ error: "You already have a booking at this time" });
+      throw new BookingConflictError("You already have a booking at this time");
     }
 
     const insertResult = await client.query(
       `INSERT INTO bookings (slot_id, patient_id, status)
        VALUES ($1, $2, 'confirmed')
        RETURNING id, slot_id, patient_id, status, created_at`,
-      [slotId, req.user!.id]
+      [slotId, patientId]
     );
 
     await client.query("COMMIT");
-    return res.status(201).json({ booking: insertResult.rows[0] });
+    return insertResult.rows[0];
   } catch (err: any) {
     await client.query("ROLLBACK");
-
     if (err.code === "23505") {
-      return res.status(409).json({ error: "This slot is already booked" });
+      throw new BookingConflictError("This slot is already booked");
     }
-    console.error(err);
-    return res.status(500).json({ error: "Something went wrong" });
+    throw err;
   } finally {
     client.release();
   }
-});
+}
 
-// --- Patient routes ---
-
-router.get("/patient/upcoming", requireAuth, requireRole("patient"), async (req, res) => {
+export async function getPatientUpcoming(patientId: number) {
   const result = await pool.query(
     `SELECT
-       b.id,
-       b.status,
-       b.created_at,
-       s.id AS slot_id,
-       s.start_time,
-       s.end_time,
+       b.id, b.status, b.created_at,
+       s.id AS slot_id, s.start_time, s.end_time,
        d.id AS doctor_id,
        d.title AS doctor_title,
        d.first_name AS doctor_first_name,
@@ -96,20 +93,16 @@ router.get("/patient/upcoming", requireAuth, requireRole("patient"), async (req,
        AND s.start_time > now()
        AND b.deleted_at IS NULL
      ORDER BY s.start_time ASC`,
-    [req.user!.id]
+    [patientId]
   );
-  return res.json({ bookings: result.rows });
-});
+  return result.rows;
+}
 
-router.get("/patient/past", requireAuth, requireRole("patient"), async (req, res) => {
+export async function getPatientPast(patientId: number) {
   const result = await pool.query(
     `SELECT
-       b.id,
-       b.status,
-       b.created_at,
-       s.id AS slot_id,
-       s.start_time,
-       s.end_time,
+       b.id, b.status, b.created_at,
+       s.id AS slot_id, s.start_time, s.end_time,
        d.id AS doctor_id,
        d.title AS doctor_title,
        d.first_name AS doctor_first_name,
@@ -123,16 +116,12 @@ router.get("/patient/past", requireAuth, requireRole("patient"), async (req, res
        AND b.status IN ('completed', 'cancelled')
        AND b.deleted_at IS NULL
      ORDER BY s.start_time DESC`,
-    [req.user!.id]
+    [patientId]
   );
-  return res.json({ bookings: result.rows });
-});
+  return result.rows;
+}
 
-router.get("/booked-times", requireAuth, requireRole("patient"), async (req, res) => {
-  const { date } = req.query;
-  if (!date || typeof date !== "string") {
-    return res.status(400).json({ error: "date query param required (YYYY-MM-DD)" });
-  }
+export async function getPatientBookedTimes(patientId: number, date: string) {
   const result = await pool.query(
     `SELECT s.start_time, s.end_time
      FROM bookings b
@@ -141,35 +130,27 @@ router.get("/booked-times", requireAuth, requireRole("patient"), async (req, res
        AND b.status = 'confirmed'
        AND b.deleted_at IS NULL
        AND s.start_time::date = $2::date`,
-    [req.user!.id, date]
+    [patientId, date]
   );
-  return res.json({ bookedTimes: result.rows });
-});
+  return result.rows;
+}
 
-router.patch("/:id/cancel", requireAuth, requireRole("patient"), async (req, res) => {
-  const { id } = req.params;
-
+export async function cancelBooking(bookingId: number, patientId: number) {
   const result = await pool.query(
-    `UPDATE bookings SET status = 'cancelled' WHERE id = $1 AND patient_id = $2 AND status = 'confirmed' AND deleted_at IS NULL`,
-    [id, req.user!.id]
+    `UPDATE bookings SET status = 'cancelled'
+     WHERE id = $1 AND patient_id = $2 AND status = 'confirmed' AND deleted_at IS NULL`,
+    [bookingId, patientId]
   );
   if (result.rowCount === 0) {
-    return res.status(404).json({ error: "Booking not found" });
+    throw new BookingNotFoundError("Booking not found");
   }
-  return res.json({ message: "Booking cancelled" });
-});
+}
 
-// --- Doctor routes ---
-
-router.get("/doctor/upcoming", requireAuth, requireRole("doctor"), async (req, res) => {
+export async function getDoctorUpcoming(doctorId: number) {
   const result = await pool.query(
     `SELECT
-       b.id,
-       b.status,
-       b.created_at,
-       s.id AS slot_id,
-       s.start_time,
-       s.end_time,
+       b.id, b.status, b.created_at,
+       s.id AS slot_id, s.start_time, s.end_time,
        p.id AS patient_id,
        p.title AS patient_title,
        p.first_name AS patient_first_name,
@@ -183,20 +164,16 @@ router.get("/doctor/upcoming", requireAuth, requireRole("doctor"), async (req, r
        AND s.start_time > now()
        AND b.deleted_at IS NULL
      ORDER BY s.start_time ASC`,
-    [req.user!.id]
+    [doctorId]
   );
-  return res.json({ bookings: result.rows });
-});
+  return result.rows;
+}
 
-router.get("/doctor/past", requireAuth, requireRole("doctor"), async (req, res) => {
+export async function getDoctorPast(doctorId: number) {
   const result = await pool.query(
     `SELECT
-       b.id,
-       b.status,
-       b.created_at,
-       s.id AS slot_id,
-       s.start_time,
-       s.end_time,
+       b.id, b.status, b.created_at,
+       s.id AS slot_id, s.start_time, s.end_time,
        p.id AS patient_id,
        p.title AS patient_title,
        p.first_name AS patient_first_name,
@@ -210,15 +187,12 @@ router.get("/doctor/past", requireAuth, requireRole("doctor"), async (req, res) 
        AND s.start_time <= now()
        AND b.deleted_at IS NULL
      ORDER BY s.start_time DESC`,
-    [req.user!.id]
+    [doctorId]
   );
-  return res.json({ bookings: result.rows });
-});
+  return result.rows;
+}
 
-router.patch("/:id/complete", requireAuth, requireRole("doctor"), async (req, res) => {
-  const { id } = req.params;
-
-  // Backend enforces: only slots that have already started can be marked complete
+export async function completeBooking(bookingId: number, doctorId: number) {
   const result = await pool.query(
     `UPDATE bookings b SET status = 'completed'
      FROM slots s
@@ -228,12 +202,9 @@ router.patch("/:id/complete", requireAuth, requireRole("doctor"), async (req, re
        AND b.status = 'confirmed'
        AND s.start_time <= now()
        AND b.deleted_at IS NULL`,
-    [id, req.user!.id]
+    [bookingId, doctorId]
   );
   if (result.rowCount === 0) {
-    return res.status(404).json({ error: "Booking not found or not eligible to complete" });
+    throw new BookingNotFoundError("Booking not found or not eligible to complete");
   }
-  return res.json({ message: "Booking marked as completed" });
-});
-
-export default router;
+}
