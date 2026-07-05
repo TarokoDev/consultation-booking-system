@@ -110,13 +110,13 @@ export function UpcomingTab() {
     setBookings((prev) => prev.filter((b) => b.id !== id));
   };
 
-  if (loading) return <div className="p-4 text-sm text-gray-500">Loading...</div>;
-  if (error) return <div className="p-4 text-sm text-red-500">{error}</div>;
+  if (loading) return <div className="p-4 text-sm text-gray-500 mx-auto w-full max-w-lg space-y-4 text-center">Loading...</div>;
+  if (error) return <div className="p-4 text-sm text-red-500 mx-auto w-full max-w-lg space-y-4 text-center">{error}</div>;
   if (bookings.length === 0)
-    return <div className="p-4 text-sm text-gray-500">No upcoming bookings.</div>;
+    return <div className="p-4 text-sm text-gray-500 mx-auto w-full max-w-lg space-y-4 text-center">No upcoming bookings.</div>;
 
   return (
-    <div className="flex flex-col gap-3 p-4">
+    <div className="flex flex-col gap-3 mx-auto w-full max-w-lg space-y-4 p-4">
       {bookings.map((b) => (
         <BookingCard key={b.id} booking={b} onCancelled={handleCancelled} />
       ))}

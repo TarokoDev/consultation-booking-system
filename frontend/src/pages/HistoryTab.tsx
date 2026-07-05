@@ -44,13 +44,13 @@ export function HistoryTab() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="p-4 text-sm text-gray-500">Loading...</div>;
-  if (error) return <div className="p-4 text-sm text-red-500">{error}</div>;
+  if (loading) return <div className="p-4 text-sm text-gray-500 mx-auto w-full max-w-lg space-y-4 text-center">Loading...</div>;
+  if (error) return <div className="p-4 text-sm text-red-500 mx-auto w-full max-w-lg space-y-4 text-center">{error}</div>;
   if (bookings.length === 0)
-    return <div className="p-4 text-sm text-gray-500">No past bookings.</div>;
+    return <div className="p-4 text-sm text-gray-500 mx-auto w-full max-w-lg space-y-4 text-center">No past bookings.</div>;
 
   return (
-    <div className="flex flex-col gap-3 p-4">
+    <div className="flex flex-col gap-3 mx-auto w-full max-w-lg space-y-4 p-4">
       {bookings.map((b) => (
         <HistoryCard key={b.id} booking={b} />
       ))}
