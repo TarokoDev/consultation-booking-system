@@ -96,4 +96,31 @@ router.patch("/:id/cancel", requireAuth, requireRole("patient"), async (req, res
   return res.json({ message: "Booking cancelled" });
 });
 
+router.get("/past", requireAuth, requireRole("patient"), async (req, res) => {
+  const result = await pool.query(
+    `SELECT
+       b.id,
+       b.status,
+       b.created_at,
+       s.id AS slot_id,
+       s.start_time,
+       s.end_time,
+       d.id AS doctor_id,
+       d.title AS doctor_title,
+       d.first_name AS doctor_first_name,
+       d.middle_name AS doctor_middle_name,
+       d.last_name AS doctor_last_name,
+       d.specialty AS doctor_specialty
+     FROM bookings b
+     JOIN slots s ON b.slot_id = s.id
+     JOIN users d ON s.doctor_id = d.id
+     WHERE b.patient_id = $1
+       AND b.status IN ('completed', 'cancelled')
+       AND b.deleted_at IS NULL
+     ORDER BY s.start_time DESC`,
+    [req.user!.id]
+  );
+  return res.json({ bookings: result.rows });
+});
+
 export default router;
