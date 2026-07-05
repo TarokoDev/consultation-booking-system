@@ -11,7 +11,7 @@ router.get("/", requireAuth, async (req, res) => {
   }
 
   const result = await pool.query(
-    `SELECT s.id, s.start_time
+    `SELECT s.id, s.start_time, s.end_time
      FROM slots s
      WHERE s.doctor_id = $1
        AND s.start_time::date = $2::date

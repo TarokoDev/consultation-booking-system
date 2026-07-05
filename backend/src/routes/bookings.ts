@@ -15,7 +15,7 @@ router.post("/", requireAuth, requireRole("patient"), async (req, res) => {
     await client.query("BEGIN");
 
     const slotResult = await client.query(
-      "SELECT id FROM slots WHERE id = $1 AND deleted_at IS NULL FOR UPDATE",
+      "SELECT id, start_time, end_time FROM slots WHERE id = $1 AND deleted_at IS NULL FOR UPDATE",
       [slotId]
     );
     if (slotResult.rows.length === 0) {
@@ -31,6 +31,22 @@ router.post("/", requireAuth, requireRole("patient"), async (req, res) => {
     if (existing.rows.length > 0) {
       await client.query("ROLLBACK");
       return res.status(409).json({ error: "This slot is already booked" });
+    }
+
+    const { start_time, end_time } = slotResult.rows[0];
+    const overlap = await client.query(
+      `SELECT b.id FROM bookings b
+       JOIN slots s ON b.slot_id = s.id
+       WHERE b.patient_id = $1
+         AND b.status = 'confirmed'
+         AND b.deleted_at IS NULL
+         AND s.start_time < $3
+         AND s.end_time > $2`,
+      [req.user!.id, start_time, end_time]
+    );
+    if (overlap.rows.length > 0) {
+      await client.query("ROLLBACK");
+      return res.status(409).json({ error: "You already have a booking at this time" });
     }
 
     const insertResult = await client.query(
@@ -81,6 +97,24 @@ router.get("/upcoming", requireAuth, requireRole("patient"), async (req, res) =>
     [req.user!.id]
   );
   return res.json({ bookings: result.rows });
+});
+
+router.get("/booked-times", requireAuth, requireRole("patient"), async (req, res) => {
+  const { date } = req.query;
+  if (!date || typeof date !== "string") {
+    return res.status(400).json({ error: "date query param required (YYYY-MM-DD)" });
+  }
+  const result = await pool.query(
+    `SELECT s.start_time, s.end_time
+     FROM bookings b
+     JOIN slots s ON b.slot_id = s.id
+     WHERE b.patient_id = $1
+       AND b.status = 'confirmed'
+       AND b.deleted_at IS NULL
+       AND s.start_time::date = $2::date`,
+    [req.user!.id, date]
+  );
+  return res.json({ bookedTimes: result.rows });
 });
 
 router.patch("/:id/cancel", requireAuth, requireRole("patient"), async (req, res) => {
