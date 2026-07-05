@@ -3,7 +3,8 @@ import { toast } from "react-toastify";
 import { getSlots, getBookedTimes } from "../api/client";
 import type { Doctor, Slot } from "../api/types";
 import { formatFullName } from "../utils/formatName";
-import { formatLongDate, formatSlotTime, toDateParam } from "./types";
+import { formatLongDate, formatSlotTime } from "../utils/formatDateTime";
+import { toDateParam } from "./types";
 
 interface Props {
   doctor: Doctor;

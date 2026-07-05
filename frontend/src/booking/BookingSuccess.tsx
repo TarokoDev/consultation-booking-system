@@ -1,6 +1,6 @@
 import type { Doctor } from "../api/types";
 import { formatFullName } from "../utils/formatName";
-import { formatLongDate } from "./types";
+import { formatLongDate } from "../utils/formatDateTime";
 
 interface Props {
   doctor: Doctor;

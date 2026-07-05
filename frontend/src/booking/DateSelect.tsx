@@ -3,7 +3,7 @@ import { DayPicker } from "react-day-picker";
 import "react-day-picker/style.css";
 import type { Doctor } from "../api/types";
 import { formatFullName } from "../utils/formatName";
-import { formatShortDate } from "./types";
+import { formatShortDate } from "../utils/formatDateTime";
 
 interface Props {
   doctor: Doctor;

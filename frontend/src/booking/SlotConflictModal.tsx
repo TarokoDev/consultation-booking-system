@@ -1,5 +1,5 @@
 import type { Slot } from "../api/types";
-import { formatSlotTime } from "./types";
+import { formatSlotTime } from "../utils/formatDateTime";
 
 interface Props {
   slot: Slot;

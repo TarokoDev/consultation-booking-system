@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getUpcomingBookings, cancelBooking } from "../api/client";
 import type { BookingWithSlot } from "../api/types";
-import { formatDate, formatTime } from "../utils/formatDateTime";
+import { formatDate, formatSlotTime } from "../utils/formatDateTime";
 
 function ConfirmationModal({
   show,
@@ -74,7 +74,7 @@ function BookingCard({
           <h3 className="card-title">{doctorName}</h3>
           <p className="text-sm text-gray-500">{booking.doctor_specialty}</p>
           <p className="text-sm">
-            {formatDate(booking.start_time)} · {formatTime(booking.start_time)}–{formatTime(booking.end_time)}
+            {formatDate(booking.start_time)} · {formatSlotTime(booking.start_time)}–{formatSlotTime(booking.end_time)}
           </p>
           {error && <p className="text-sm text-red-500">{error}</p>}
         </div>

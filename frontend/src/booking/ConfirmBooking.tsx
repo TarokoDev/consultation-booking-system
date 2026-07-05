@@ -1,6 +1,6 @@
 import type { Doctor, Slot } from "../api/types";
 import { formatFullName } from "../utils/formatName";
-import { formatLongDate, formatSlotTime } from "./types";
+import { formatLongDate, formatSlotTime } from "../utils/formatDateTime";
 
 interface Props {
   doctor: Doctor;
@@ -31,7 +31,7 @@ export function ConfirmBooking({
           <span>Date: {formatLongDate(date)}</span>
         </div>
         <div className="flex items-center justify-between">
-          <span>Slot: {formatSlotTime(slot.start_time)}</span>
+          <span>Slot: {formatSlotTime(slot.start_time)} - {formatSlotTime(slot.end_time)}</span>
         </div>
       </div>
 
