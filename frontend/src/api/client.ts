@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { Booking, BookingWithSlot, Doctor, Slot, User } from "./types";
+import type { Booking, BookingWithSlot, DoctorBookingView, Doctor, Slot, User } from "./types";
 
 export class ApiError extends Error {
   status?: number;
@@ -49,8 +49,8 @@ export async function createBooking(slotId: number) {
   return res.data;
 }
 
-export async function getUpcomingBookings() {
-  const res = await http.get<{ bookings: BookingWithSlot[] }>("/bookings/upcoming");
+export async function getPatientUpcomingBookings() {
+  const res = await http.get<{ bookings: BookingWithSlot[] }>("/bookings/patient/upcoming");
   return res.data;
 }
 
@@ -67,7 +67,22 @@ export async function getBookedTimes(date: string) {
   return res.data;
 }
 
-export async function getPastBookings() {
-  const res = await http.get<{ bookings: BookingWithSlot[] }>("/bookings/past");
+export async function getPatientPastBookings() {
+  const res = await http.get<{ bookings: BookingWithSlot[] }>("/bookings/patient/past");
+  return res.data;
+}
+
+export async function getDoctorUpcomingBookings() {
+  const res = await http.get<{ bookings: DoctorBookingView[] }>("/bookings/doctor/upcoming");
+  return res.data;
+}
+
+export async function getDoctorPastBookings() {
+  const res = await http.get<{ bookings: DoctorBookingView[] }>("/bookings/doctor/past");
+  return res.data;
+}
+
+export async function markBookingComplete(id: number) {
+  const res = await http.patch<{ message: string }>(`/bookings/${id}/complete`);
   return res.data;
 }
