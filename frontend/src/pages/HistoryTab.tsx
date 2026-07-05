@@ -25,7 +25,7 @@ export const HistoryCard = ({ booking }: { booking: BookingWithSlot }) => {
           </p>
         </div>
         <div className="justify-end">
-          <span className={`badge badge-${booking.status === "completed" ? "success" : "error"} badge-sm`}>{booking.status}</span>
+          <span className={`badge badge-sm ${booking.status === "completed" ? "badge-success" : "badge-error"}`}>{booking.status}</span>
         </div> 
       </div>
     </div>
