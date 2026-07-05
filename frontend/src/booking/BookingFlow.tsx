@@ -61,8 +61,9 @@ export function BookingFlow() {
 
   return (
     <div>
-      <div className="mx-auto flex w-full max-w-lg items-center p-4 pb-0">
+      
         {canGoBack && (
+          <div className="mx-auto flex w-full max-w-lg items-center p-4 pb-0">
           <button
             type="button"
             onClick={goBack}
@@ -70,8 +71,8 @@ export function BookingFlow() {
           >
             &larr; Go back
           </button>
+          </div>
         )}
-      </div>
 
       {step === "doctor-select" && (
         <DoctorSelect
