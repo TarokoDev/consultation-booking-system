@@ -53,3 +53,8 @@ export async function getUpcomingBookings() {
   const res = await http.get<{ bookings: BookingWithSlot[] }>("/bookings/upcoming");
   return res.data;
 }
+
+export async function cancelBooking(id: number) {
+  const res = await http.patch<{ message: string }>(`/bookings/${id}/cancel`);
+  return res.data;
+}
