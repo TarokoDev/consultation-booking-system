@@ -146,7 +146,9 @@ export async function cancelBooking(bookingId: number, patientId: number) {
   }
 }
 
-export async function getDoctorUpcoming(doctorId: number) {
+// date: SGT local date string "YYYY-MM-DD". Defaults to today (SGT).
+export async function getDoctorUpcoming(doctorId: number, date?: string) {
+  const sgDate = date ?? new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Singapore" });
   const result = await pool.query(
     `SELECT
        b.id, b.status, b.created_at,
@@ -161,10 +163,10 @@ export async function getDoctorUpcoming(doctorId: number) {
      JOIN users p ON b.patient_id = p.id
      WHERE s.doctor_id = $1
        AND b.status = 'confirmed'
-       AND s.start_time > now()
+       AND date_trunc('day', s.start_time AT TIME ZONE 'Asia/Singapore') = $2::date
        AND b.deleted_at IS NULL
      ORDER BY s.start_time ASC`,
-    [doctorId]
+    [doctorId, sgDate]
   );
   return result.rows;
 }
@@ -190,6 +192,24 @@ export async function getDoctorPast(doctorId: number) {
     [doctorId]
   );
   return result.rows;
+}
+
+// Returns distinct SGT dates ("YYYY-MM-DD") that have at least one confirmed
+// booking for the doctor in the given year-month (e.g. "2026-07").
+export async function getDoctorBookedDatesInMonth(doctorId: number, yearMonth: string) {
+  const result = await pool.query<{ date: string }>(
+    `SELECT DISTINCT
+       to_char(s.start_time AT TIME ZONE 'Asia/Singapore', 'YYYY-MM-DD') AS date
+     FROM bookings b
+     JOIN slots s ON b.slot_id = s.id
+     WHERE s.doctor_id = $1
+       AND b.status = 'confirmed'
+       AND b.deleted_at IS NULL
+       AND to_char(s.start_time AT TIME ZONE 'Asia/Singapore', 'YYYY-MM') = $2
+     ORDER BY date`,
+    [doctorId, yearMonth]
+  );
+  return result.rows.map((r) => r.date);
 }
 
 export async function completeBooking(bookingId: number, doctorId: number) {

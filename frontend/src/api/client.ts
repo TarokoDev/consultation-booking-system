@@ -72,8 +72,15 @@ export async function getPatientPastBookings() {
   return res.data;
 }
 
-export async function getDoctorUpcomingBookings() {
-  const res = await http.get<{ bookings: DoctorBookingView[] }>("/bookings/doctor/upcoming");
+export async function getDoctorBookedDates(month: string) {
+  const res = await http.get<{ dates: string[] }>("/bookings/doctor/booked-dates", { params: { month } });
+  return res.data;
+}
+
+export async function getDoctorUpcomingBookings(date?: string) {
+  const res = await http.get<{ bookings: DoctorBookingView[] }>("/bookings/doctor/upcoming", {
+    params: date ? { date } : undefined,
+  });
   return res.data;
 }
 

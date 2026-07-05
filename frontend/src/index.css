@@ -1,2 +1,8 @@
 @import "tailwindcss";
 @plugin "daisyui";
+
+/* Green number for days with confirmed bookings in the doctor calendar */
+.rdp-day.has-booking .rdp-day_button {
+  color: #16a34a;
+  font-weight: 600;
+}

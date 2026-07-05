@@ -17,6 +17,16 @@ export function formatSlotTime(isoString: string): string {
   });
 }
 
+// "2026-07-05" → "Today, 5 Jul 2026" | "Sat, 5 Jul 2026"
+export function formatDatePickerLabel(dateStr: string): string {
+  const todaySGT = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Singapore" });
+  const isToday = dateStr === todaySGT;
+  const d = new Date(`${dateStr}T00:00:00`);
+  const dayMonth = d.toLocaleDateString("en-SG", { day: "numeric", month: "short", year: "numeric" });
+  const weekday = d.toLocaleDateString("en-SG", { weekday: "short" });
+  return isToday ? `Today, ${dayMonth}` : `${weekday}, ${dayMonth}`;
+}
+
 // new Date("2026-07-06") → "06 July 2026"
 export function formatLongDate(date: Date): string {
   return date.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });

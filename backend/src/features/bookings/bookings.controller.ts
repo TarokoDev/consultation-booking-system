@@ -7,6 +7,7 @@ import {
   cancelBooking,
   getDoctorUpcoming,
   getDoctorPast,
+  getDoctorBookedDatesInMonth,
   completeBooking,
   BookingConflictError,
   BookingNotFoundError,
@@ -58,8 +59,18 @@ export async function handleCancelBooking(req: Request, res: Response) {
   }
 }
 
+export async function handleGetDoctorBookedDates(req: Request, res: Response) {
+  const { month } = req.query;
+  if (!month || typeof month !== "string" || !/^\d{4}-\d{2}$/.test(month)) {
+    return res.status(400).json({ error: "month query param required (YYYY-MM)" });
+  }
+  const dates = await getDoctorBookedDatesInMonth(req.user!.id, month);
+  return res.json({ dates });
+}
+
 export async function handleGetDoctorUpcoming(req: Request, res: Response) {
-  const bookings = await getDoctorUpcoming(req.user!.id);
+  const date = typeof req.query.date === "string" ? req.query.date : undefined;
+  const bookings = await getDoctorUpcoming(req.user!.id, date);
   return res.json({ bookings });
 }
 
