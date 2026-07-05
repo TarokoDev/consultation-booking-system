@@ -47,3 +47,17 @@ export interface BookingWithSlot {
   doctor_last_name: string;
   doctor_specialty: string | null;
 }
+
+export interface DoctorBookingView {
+  id: number;
+  status: "confirmed" | "cancelled" | "completed";
+  created_at: string;
+  slot_id: number;
+  start_time: string;
+  end_time: string;
+  patient_id: number;
+  patient_title: string | null;
+  patient_first_name: string;
+  patient_middle_name: string | null;
+  patient_last_name: string;
+}
