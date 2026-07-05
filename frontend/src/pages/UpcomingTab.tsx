@@ -76,6 +76,7 @@ function BookingCard({
           <p className="text-sm">
             {formatDate(booking.start_time)} · {formatSlotTime(booking.start_time)}–{formatSlotTime(booking.end_time)}
           </p>
+          <p className="text-sm">Reason for visit: {booking.notes ? booking.notes : "N/A"}</p>
           {error && <p className="text-sm text-red-500">{error}</p>}
         </div>
         <div className="card-body">

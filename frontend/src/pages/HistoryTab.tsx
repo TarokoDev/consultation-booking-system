@@ -23,6 +23,7 @@ export const HistoryCard = ({ booking }: { booking: BookingWithSlot }) => {
           <p className="text-sm">
             {formatDate(booking.start_time)} · {formatSlotTime(booking.start_time)}–{formatSlotTime(booking.end_time)}
           </p>
+          <p className="text-sm">Reason for visit: {booking.notes ? booking.notes : "N/A"}</p>
         </div>
         <div className="justify-end">
           <span className={`badge badge-sm ${booking.status === "completed" ? "badge-success" : "badge-error"}`}>{booking.status}</span>
