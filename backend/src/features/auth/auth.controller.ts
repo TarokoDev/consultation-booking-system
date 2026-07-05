@@ -9,21 +9,13 @@ export async function login(req: Request, res: Response) {
 
   try {
     const { token, user } = await loginUser(email, password);
-    const isProd = process.env.NODE_ENV === "production";
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: isProd ? "none" : "lax",
-      maxAge: 24 * 60 * 60 * 1000,
-    });
-    return res.json({ user });
+    return res.json({ user, token });
   } catch (err: any) {
     return res.status(err.status ?? 500).json({ error: err.message });
   }
 }
 
 export function logout(req: Request, res: Response) {
-  res.clearCookie("token");
   return res.json({ ok: true });
 }
 

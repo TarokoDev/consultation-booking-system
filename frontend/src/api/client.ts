@@ -5,9 +5,18 @@ export class ApiError extends Error {
   status?: number;
 }
 
+const TOKEN_KEY = "token";
+
 const http = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
-  withCredentials: true,
+});
+
+http.interceptors.request.use((config) => {
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 http.interceptors.response.use(
@@ -21,12 +30,14 @@ http.interceptors.response.use(
 );
 
 export async function login(email: string, password: string) {
-  const res = await http.post<{ user: User }>("/auth/login", { email, password });
+  const res = await http.post<{ user: User; token: string }>("/auth/login", { email, password });
+  localStorage.setItem(TOKEN_KEY, res.data.token);
   return res.data;
 }
 
 export async function logout() {
   const res = await http.post<{ ok: true }>("/auth/logout");
+  localStorage.removeItem(TOKEN_KEY);
   return res.data;
 }
 
