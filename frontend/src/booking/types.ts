@@ -2,6 +2,7 @@ export type Step =
   | "doctor-select"
   | "date-select"
   | "slot-select"
+  | "notes"
   | "confirm-booking"
   | "success"
   | "error";

@@ -6,6 +6,7 @@ interface Props {
   doctor: Doctor;
   date: Date;
   slot: Slot;
+  notes: string;
   isSubmitting: boolean;
   onCancel: () => void;
   onConfirm: () => void;
@@ -15,6 +16,7 @@ export function ConfirmBooking({
   doctor,
   date,
   slot,
+  notes,
   isSubmitting,
   onCancel,
   onConfirm,
@@ -32,6 +34,10 @@ export function ConfirmBooking({
         </div>
         <div className="flex items-center justify-between">
           <span>Slot: {formatSlotTime(slot.start_time)} - {formatSlotTime(slot.end_time)}</span>
+        </div>
+        <div>
+          <span className="block">Reason for visit:</span>
+          <p className="whitespace-pre-wrap text-gray-700">{notes}</p>
         </div>
       </div>
 

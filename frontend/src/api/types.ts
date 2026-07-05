@@ -30,12 +30,14 @@ export interface Booking {
   slot_id: number;
   patient_id: number;
   status: "confirmed" | "cancelled" | "completed";
+  notes: string;
   created_at: string;
 }
 
 export interface BookingWithSlot {
   id: number;
   status: "confirmed" | "cancelled" | "completed";
+  notes: string;
   created_at: string;
   slot_id: number;
   start_time: string;
@@ -51,6 +53,7 @@ export interface BookingWithSlot {
 export interface DoctorBookingView {
   id: number;
   status: "confirmed" | "cancelled" | "completed";
+  notes: string;
   created_at: string;
   slot_id: number;
   start_time: string;

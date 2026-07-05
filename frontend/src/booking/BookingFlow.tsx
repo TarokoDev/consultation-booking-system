@@ -6,18 +6,20 @@ import { DoctorSelect } from "./DoctorSelect";
 import { DateSelect } from "./DateSelect";
 import { SlotSelect } from "./SlotSelect";
 import { SlotConflictModal } from "./SlotConflictModal";
+import { BookingNotes } from "./BookingNotes";
 import { ConfirmBooking } from "./ConfirmBooking";
 import { BookingSuccess } from "./BookingSuccess";
 import { BookingError } from "./BookingError";
 import type { Step } from "./types";
 
-const STEP_ORDER: Step[] = ["doctor-select", "date-select", "slot-select", "confirm-booking"];
+const STEP_ORDER: Step[] = ["doctor-select", "date-select", "slot-select", "notes", "confirm-booking"];
 
 export function BookingFlow() {
   const [step, setStep] = useState<Step>("doctor-select");
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
+  const [notes, setNotes] = useState("");
   const [isConflictModalOpen, setIsConflictModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -32,6 +34,7 @@ export function BookingFlow() {
     setSelectedDoctor(null);
     setSelectedDate(null);
     setSelectedSlot(null);
+    setNotes("");
     setIsConflictModalOpen(false);
     setStep("doctor-select");
   }
@@ -40,7 +43,7 @@ export function BookingFlow() {
     if (!selectedSlot) return;
     setIsSubmitting(true);
     try {
-      await createBooking(selectedSlot.id);
+      await createBooking(selectedSlot.id, notes);
       setStep("success");
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
@@ -100,8 +103,16 @@ export function BookingFlow() {
           date={selectedDate}
           onSelectSlot={(slot) => {
             setSelectedSlot(slot);
-            setStep("confirm-booking");
+            setStep("notes");
           }}
+        />
+      )}
+
+      {step === "notes" && (
+        <BookingNotes
+          value={notes}
+          onChange={setNotes}
+          onContinue={() => setStep("confirm-booking")}
         />
       )}
 
@@ -111,6 +122,7 @@ export function BookingFlow() {
             doctor={selectedDoctor}
             date={selectedDate}
             slot={selectedSlot}
+            notes={notes}
             isSubmitting={isSubmitting}
             onCancel={resetToStart}
             onConfirm={handleConfirm}

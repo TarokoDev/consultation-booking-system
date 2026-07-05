@@ -44,8 +44,8 @@ export async function getSlots(doctorId: number, date: string) {
   return res.data;
 }
 
-export async function createBooking(slotId: number) {
-  const res = await http.post<{ booking: Booking }>("/bookings", { slotId });
+export async function createBooking(slotId: number, notes: string) {
+  const res = await http.post<{ booking: Booking }>("/bookings", { slotId, notes });
   return res.data;
 }
 

@@ -14,7 +14,7 @@ export class BookingNotFoundError extends Error {
   }
 }
 
-export async function createBooking(slotId: number, patientId: number) {
+export async function createBooking(slotId: number, patientId: number, notes: string) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -55,10 +55,10 @@ export async function createBooking(slotId: number, patientId: number) {
     }
 
     const insertResult = await client.query(
-      `INSERT INTO bookings (slot_id, patient_id, status)
-       VALUES ($1, $2, 'confirmed')
-       RETURNING id, slot_id, patient_id, status, created_at`,
-      [slotId, patientId]
+      `INSERT INTO bookings (slot_id, patient_id, status, notes)
+       VALUES ($1, $2, 'confirmed', $3)
+       RETURNING id, slot_id, patient_id, status, notes, created_at`,
+      [slotId, patientId, notes]
     );
 
     await client.query("COMMIT");
@@ -77,7 +77,7 @@ export async function createBooking(slotId: number, patientId: number) {
 export async function getPatientUpcoming(patientId: number) {
   const result = await pool.query(
     `SELECT
-       b.id, b.status, b.created_at,
+       b.id, b.status, b.created_at, b.notes,
        s.id AS slot_id, s.start_time, s.end_time,
        d.id AS doctor_id,
        d.title AS doctor_title,
@@ -101,7 +101,7 @@ export async function getPatientUpcoming(patientId: number) {
 export async function getPatientPast(patientId: number) {
   const result = await pool.query(
     `SELECT
-       b.id, b.status, b.created_at,
+       b.id, b.status, b.created_at, b.notes,
        s.id AS slot_id, s.start_time, s.end_time,
        d.id AS doctor_id,
        d.title AS doctor_title,
@@ -151,7 +151,7 @@ export async function getDoctorUpcoming(doctorId: number, date?: string) {
   const sgDate = date ?? new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Singapore" });
   const result = await pool.query(
     `SELECT
-       b.id, b.status, b.created_at,
+       b.id, b.status, b.created_at, b.notes,
        s.id AS slot_id, s.start_time, s.end_time,
        p.id AS patient_id,
        p.title AS patient_title,
@@ -174,7 +174,7 @@ export async function getDoctorUpcoming(doctorId: number, date?: string) {
 export async function getDoctorPast(doctorId: number) {
   const result = await pool.query(
     `SELECT
-       b.id, b.status, b.created_at,
+       b.id, b.status, b.created_at, b.notes,
        s.id AS slot_id, s.start_time, s.end_time,
        p.id AS patient_id,
        p.title AS patient_title,

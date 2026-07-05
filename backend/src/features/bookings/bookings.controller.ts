@@ -14,12 +14,15 @@ import {
 } from "./bookings.service";
 
 export async function handleCreateBooking(req: Request, res: Response) {
-  const { slotId } = req.body;
+  const { slotId, notes } = req.body;
   if (!slotId) {
     return res.status(400).json({ error: "slotId is required" });
   }
+  if (typeof notes !== "string" || notes.trim().length === 0) {
+    return res.status(400).json({ error: "notes is required" });
+  }
   try {
-    const booking = await createBooking(slotId, req.user!.id);
+    const booking = await createBooking(slotId, req.user!.id, notes.trim());
     return res.status(201).json({ booking });
   } catch (err) {
     if (err instanceof BookingConflictError) return res.status(409).json({ error: err.message });
