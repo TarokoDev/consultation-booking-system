@@ -18,7 +18,7 @@ export function DoctorSelect({ onSelect }: Props) {
   }, []);
 
   if (isLoading) {
-    return <div className="p-4 text-sm text-gray-500">Loading doctors...</div>;
+    return <div className="p-4 text-sm text-gray-500 mx-auto w-full max-w-lg space-y-4 text-center">Loading doctors...</div>;
   }
 
   return (
