@@ -41,7 +41,6 @@ function BookingCard({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // TODO(human): implement handleConfirm — call cancelBooking, then onCancelled or show error
   const handleConfirm = async () => {
     try {
       await cancelBooking(booking.id);
@@ -70,7 +69,7 @@ function BookingCard({
         onClose={() => setShowModal(false)}
         onConfirm={handleConfirm}
       />
-      <div className="card bg-base-100 shadow-sm flex flex-row justify-between items-center">
+      <div className="card bg-base-100 border border-gray-200 flex flex-row justify-between items-center">
         <div className="card-body">
           <h3 className="card-title">{doctorName}</h3>
           <p className="text-sm text-gray-500">{booking.doctor_specialty}</p>
