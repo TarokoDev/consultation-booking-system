@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "react-toastify";
 import { ApiError, createBooking } from "../api/client";
 import type { Doctor, Slot } from "../api/types";
 import { DoctorSelect } from "./DoctorSelect";
@@ -43,7 +44,13 @@ export function BookingFlow() {
       setStep("success");
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
-        setIsConflictModalOpen(true);
+        if (err.message === "You already have a booking at this time") {
+          toast.warning("You already have a booking at this time. Please select another slot.");
+          setSelectedSlot(null);
+          setStep("slot-select");
+        } else {
+          setIsConflictModalOpen(true);
+        }
       } else {
         setStep("error");
       }
@@ -125,6 +132,7 @@ export function BookingFlow() {
       )}
 
       {step === "error" && <BookingError onBookAnother={resetToStart} />}
+
     </div>
   );
 }

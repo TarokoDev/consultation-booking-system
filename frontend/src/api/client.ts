@@ -59,6 +59,14 @@ export async function cancelBooking(id: number) {
   return res.data;
 }
 
+export async function getBookedTimes(date: string) {
+  const res = await http.get<{ bookedTimes: { start_time: string; end_time: string }[] }>(
+    "/bookings/booked-times",
+    { params: { date } }
+  );
+  return res.data;
+}
+
 export async function getPastBookings() {
   const res = await http.get<{ bookings: BookingWithSlot[] }>("/bookings/past");
   return res.data;
