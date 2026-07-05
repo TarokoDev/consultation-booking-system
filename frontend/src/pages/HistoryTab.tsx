@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getPastBookings } from "../api/client";
+import { getPatientPastBookings } from "../api/client";
 import type { BookingWithSlot } from "../api/types";
 import { formatDate, formatSlotTime } from "../utils/formatDateTime";
 
@@ -38,7 +38,7 @@ export function HistoryTab() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getPastBookings()
+    getPatientPastBookings()
       .then((data) => setBookings(data.bookings))
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
@@ -46,8 +46,7 @@ export function HistoryTab() {
 
   if (loading) return <div className="p-4 text-sm text-gray-500 mx-auto w-full max-w-lg space-y-4 text-center">Loading...</div>;
   if (error) return <div className="p-4 text-sm text-red-500 mx-auto w-full max-w-lg space-y-4 text-center">{error}</div>;
-  if (bookings.length === 0)
-    return <div className="p-4 text-sm text-gray-500 mx-auto w-full max-w-lg space-y-4 text-center">No past bookings.</div>;
+  if (bookings.length === 0) return <div className="p-4 text-sm text-gray-500 mx-auto w-full max-w-lg space-y-4 text-center">No past bookings.</div>;
 
   return (
     <div className="flex flex-col gap-3 mx-auto w-full max-w-lg space-y-4 p-4">

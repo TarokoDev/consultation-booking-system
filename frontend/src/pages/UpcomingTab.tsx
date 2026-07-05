@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getUpcomingBookings, cancelBooking } from "../api/client";
+import { getPatientUpcomingBookings, cancelBooking } from "../api/client";
 import type { BookingWithSlot } from "../api/types";
 import { formatDate, formatSlotTime } from "../utils/formatDateTime";
 
@@ -45,7 +45,7 @@ function BookingCard({
     try {
       await cancelBooking(booking.id);
       onCancelled(booking.id);
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
@@ -100,7 +100,7 @@ export function UpcomingTab() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getUpcomingBookings()
+    getPatientUpcomingBookings()
       .then((data) => setBookings(data.bookings))
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
