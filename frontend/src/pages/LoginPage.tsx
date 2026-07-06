@@ -23,7 +23,7 @@ export function LoginPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setIsSubmitting(false)
+    setIsSubmitting(true)
 
     try {
       const user = await login(email, password);
@@ -69,7 +69,8 @@ export function LoginPage() {
         </label>
 
         <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-          Log in
+          {isSubmitting && <span className="loading loading-spinner loading-sm"></span>}
+          {isSubmitting ? "Logging in…" : "Log in"}
         </button>
       </form>
     </div>
