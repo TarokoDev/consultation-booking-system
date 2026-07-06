@@ -120,7 +120,7 @@ CREATE TABLE bookings (
   slot_id    INTEGER NOT NULL REFERENCES slots(id),
   patient_id INTEGER NOT NULL REFERENCES users(id),
   status     booking_status NOT NULL DEFAULT 'confirmed',
-  notes      TEXT NOT NULL DEFAULT '',      -- optional patient note to the doctor
+  notes      TEXT NOT NULL DEFAULT '',      -- patient note to the doctor (API requires non-empty)
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   deleted_at TIMESTAMPTZ                    -- soft delete
 );
