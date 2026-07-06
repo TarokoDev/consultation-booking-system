@@ -65,6 +65,10 @@ The system models a single physical clinic with a small roster of doctors. Under
 
 ## MVP user flows
 
+Before building, I sketched the full UI/UX as a wireframe prototype — patient and doctor flows, including the conflict, empty, and error states. The implemented app follows it closely:
+
+![Initial UI/UX wireframe prototype](docs/UIUX_wireframe_prototype.png)
+
 **Patient — book an appointment** (the core flow):
 
 1. Log in → lands on the patient dashboard.
