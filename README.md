@@ -26,14 +26,22 @@ The database is a Render-hosted PostgreSQL instance. No real secrets are committ
 - [Tech stack & why](#tech-stack--why)
 - [Repository structure](#repository-structure)
 - [Getting started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [1. Backend](#1-backend)
+  - [2. Frontend](#2-frontend)
+  - [3. Tests](#3-tests)
 - [Demo accounts](#demo-accounts)
 - [How to use the app](#how-to-use-the-app)
 - [Features by role](#features-by-role)
+  - [Per-feature assumptions & limitations](#per-feature-assumptions--limitations)
 - [API reference](#api-reference)
+  - [Conventions](#conventions)
+  - [Sample requests & responses](#sample-requests--responses)
 - [Database schema](#database-schema)
 - [Concurrency: preventing double-booking](#concurrency-preventing-double-booking)
 - [Booking states & transitions](#booking-states--transitions)
 - [Design decisions & trade-offs](#design-decisions--trade-offs)
+  - [UI/UX flows & edge cases](#uiux-flows--edge-cases)
 - [Known limitations / future work](#known-limitations--future-work)
 
 ---
@@ -68,7 +76,7 @@ The system models a single physical clinic with a small roster of doctors. Under
 
 Before building, I sketched the full UI/UX as a wireframe prototype — patient and doctor flows, including the conflict, empty, and error states. The implemented app follows it closely:
 
-![UI/UX wireframe prototype — patient and doctor flows](docs/UIUX_wireframe_prototype.png)
+UI/UX wireframe prototype — patient and doctor flows
 
 **Patient — book an appointment** (the core flow):
 
@@ -193,6 +201,41 @@ npm run dev            # http://localhost:5173
 
 Other frontend scripts: `npm run build` (type-check + build), `npm run lint` (oxlint), `npm run preview`.
 
+### 3. Tests
+
+One automated check exists, aimed squarely at the graded question — the double-booking race:
+
+```bash
+cd backend
+npm test                     # backend must be running and seeded
+# API_URL=https://... npm test   to point it at a deployed backend
+```
+
+`scripts/concurrency-check.ts` logs in all five seeded patients, picks a slot none of them has a conflicting booking on, fires five booking requests at it **simultaneously**, and asserts: exactly one `201`, four `409`s, and the slot gone from public availability. It then cancels the winning booking, so it's safe to run repeatedly. Sample output:
+
+```
+Firing 5 concurrent booking requests at slot 11...
+  alice_goh@godoc.test         -> HTTP 201
+  marcus_lim@godoc.test        -> HTTP 409 (This slot is already booked)
+  priya_nair@godoc.test        -> HTTP 409 (This slot is already booked)
+  daniel_wong@godoc.test       -> HTTP 409 (This slot is already booked)
+  nurul_aisyah@godoc.test      -> HTTP 409 (This slot is already booked)
+
+Created: 1 (expected 1)
+Conflicts (409): 4 (expected 4)
+PASS — exactly one booking won the race.
+```
+
+There is no unit or E2E suite beyond this - a deliberate trade-off (see limitations): one integration check that proves the core correctness claim beat broad scaffolding under the deadline.
+
+Other testing considered, done manually for now:
+
+1. **End-to-end (browser) tests** — Cypress/Playwright driving the real UI through the booking flow, conflict modal, and cancel/complete actions. Covered manually via the flows in [How to use the app](#how-to-use-the-app), including the two-browser double-booking race.
+2. **Unit tests** — pure logic like the upcoming/history split, slot-overlap checks, and name/date formatting. Verified manually through the UI against seeded data.
+3. **API contract tests** — per-endpoint checks of auth requirements, role gates (`403`s), and validation errors (`400`s). Exercised manually with curl and via the live demo; the shapes are documented in [Sample requests & responses](#sample-requests--responses).
+
+These would be the build-out order if the project continued: contract tests first, then unit tests as logic grows, E2E last.
+
 ## Demo accounts
 
 All seeded accounts use the password `password123`.
@@ -265,16 +308,16 @@ Works the same on the [live demo](#live-demo) or a local run. All passwords are 
 Summary view — one row per implemented feature, including why each line was drawn where it was. Deeper reasoning lives in [Design decisions & trade-offs](#design-decisions--trade-offs) and [Known limitations / future work](#known-limitations--future-work).
 
 
-| Feature                   | Assumptions                                                                                                                 | Known limitations                                                                                                                               | Why the line was drawn here                                                                                                                                                                                                                                                                                                                                   |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Login / auth              | Users are pre-registered via the seed script; a stateless JWT is sufficient for an MVP                                      | No signup or password reset; 24 h token expiry isn't intercepted client-side; localStorage storage is XSS-exposed (see trade-offs)              | The brief centres on the booking flow, not account management. A simple JWT was the fastest auth I could implement confidently, freeing time for the core flow — signup/reset add forms and flows that earn no marks here                                                                                                                                     |
-| Doctor & slot browsing    | Patients pick a specific doctor (not "next available"); slots pre-generated 20 days ahead at fixed clinic hours             | Slot window is seed-time only (no rolling extension job); today's already-elapsed slots still listed; calendar doesn't show the 20-day boundary | Pre-generated slots keep the booking transaction a single row lock . A scheduling module (shifts, leave, slot admin) is days of work and i felt could be decided later on if its worth impmenting from assessor recommendation.                                                                                                                               |
-| Booking creation          | Booking is an immediate commitment — no payment/approval step, hence no `pending` state; the note to the doctor is required | Fixed 30-minute blocks; consultation overrun not handled; no confirmation email/SMS                                                             | Every state added multiplies transitions to reason about and test. With no async step in scope, `pending` would a liability and extra scope such as stale data, cache, extra updates, considering the timeline.                                                                                                                                               |
-| Double-booking prevention | Contention happens per slot; making the second request wait a few ms on a row lock is acceptable                            | Correctness is argued (lock + partial unique index) but not yet proven by an automated concurrency test                                         | This is the graded core, so it got the design time first: two independent layers of defence over one clever one. The test harness lost the time trade-off against finishing visible flows                                                                                                                                                                     |
-| Self-overlap prevention   | A patient can't attend two consultations at the same time                                                                   | The pre-warning in the slot grid depends on fetched booked-times; only the in-transaction server check is authoritative                         | The server check is a few lines inside a transaction that already exists. The UI dimming was quick to add since frontend is where I'm fastest                                                                                                                                                                                                                 |
-| Cancellation              | Only the patient cancels, only upcoming bookings; a freed slot is immediately rebookable by anyone                          | No doctor-initiated cancel or reschedule; the doctor learns of a cancellation only by its absence from their list                               | One cancel path Doctor-initiated cancellation drags in notifications and rebooking flows                                                                                                                                                                                                                                                                      |
-| Mark as complete          | The doctor confirms attendance manually, and only after the slot's start time (enforced in SQL)                             | No auto-complete job; a past booking left `confirmed` (no-show) stays that way forever                                                          | Manual + an SQL time guard is a few safe lines. An auto-complete job means scheduled infrastructure (cron/worker) — not important yet for this assessment.                                                                                                                                                                                                    |
-| History views             | Patient history = completed/cancelled; doctor history also includes past confirmed (no-shows)                               | No pagination or sorting — lists grow unbounded                                                                                                 | Needed so the demo feels real (seeded history) and doctors can spot no-shows. Pagination is pointless at seed-data scale; it's listed as future work instead of half-built                                                                                                                                                                                    |
+| Feature                   | Assumptions                                                                                                                 | Known limitations                                                                                                                               | Why?                                                                                                                                                                                                                                                                                          |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Login / auth              | Users are pre-registered via the seed script; a stateless JWT is sufficient for an MVP                                      | No signup or password reset; 24 h token expiry isn't intercepted client-side; localStorage storage is XSS-exposed (see trade-offs)              | The brief centres on the booking flow, not account management. A simple JWT was the fastest auth I could implement confidently, freeing time for the core flow — signup/reset add forms and flows that earn no marks here                                                                     |
+| Doctor & slot browsing    | Patients pick a specific doctor (not "next available"); slots pre-generated 20 days ahead at fixed clinic hours             | Slot window is seed-time only (no rolling extension job); today's already-elapsed slots still listed; calendar doesn't show the 20-day boundary | Pre-generated slots keep the booking transaction a single row lock . A scheduling module (shifts, leave, slot admin) is days of work and i felt could be decided later on if its worth impmenting from assessor recommendation.                                                               |
+| Booking creation          | Booking is an immediate commitment — no payment/approval step, hence no `pending` state; the note to the doctor is required | Fixed 30-minute blocks; consultation overrun not handled; no confirmation email/SMS                                                             | Every state added multiplies transitions to reason about and test. With no async step in scope, `pending` would a liability and extra scope such as stale data, cache, extra updates, considering the timeline.                                                                               |
+| Double-booking prevention | Contention happens per slot; making the second request wait a few ms on a row lock is acceptable                            | Proven by `npm test` (5 concurrent requests, exactly one wins); no unit/E2E coverage beyond that check                                          | This is the graded core (i assume).                                                                                                                                                                                                                                                           |
+| Self-overlap prevention   | A patient can't attend two consultations at the same time                                                                   | The pre-warning in the slot grid depends on fetched booked-times; only the in-transaction server check is authoritative                         | The server check is a few lines inside a transaction that already exists. The UI dimming was quick to add since frontend is where I'm fastest                                                                                                                                                 |
+| Cancellation              | Only the patient cancels, only upcoming bookings; a freed slot is immediately rebookable by anyone                          | No doctor-initiated cancel or reschedule; the doctor learns of a cancellation only by its absence from their list                               | One cancel path Doctor-initiated cancellation drags in notifications and rebooking flows                                                                                                                                                                                                      |
+| Mark as complete          | The doctor confirms attendance manually, and only after the slot's start time (enforced in SQL)                             | No auto-complete job; a past booking left `confirmed` (no-show) stays that way forever                                                          | Manual + an SQL time guard is a few safe lines. An auto-complete job means scheduled infrastructure (cron/worker) — not important yet for this assessment.                                                                                                                                    |
+| History views             | Patient history = completed/cancelled; doctor history also includes past confirmed (no-shows)                               | No pagination or sorting — lists grow unbounded                                                                                                 | Needed so the demo feels real (seeded history) and doctors can spot no-shows. Pagination is pointless at seed-data scale; it's listed as future work instead of half-built                                                                                                                    |
 | Admin dashboard           | Read-only oversight is enough for the MVP; Patients/Doctors tabs cover the useful role filters                              | No user CRUD, booking overrides, or slot creation; user list not paginated                                                                      | Deliberately built last: least core to the patient/doctor flow the brief describes. Read-only views reuse the existing tab/card patterns, so it was cheap. New features such as Management rights and scheduling are new flows entirely and can be done later if decided to be a requirement. |
 
 
@@ -485,7 +528,7 @@ Booking conflicts return `409` with an error message; the frontend uses this to 
 
 Three tables (see `backend/migrations/000_init.sql` for the full commented DDL):
 
-![Entity-relationship diagram of users, slots, and bookings](docs/ERD.png)
+Entity-relationship diagram of users, slots, and bookings
 
 
 | Table      | What it stores                            | Notable details                                                                                                                                                                                                                         |
@@ -528,7 +571,7 @@ Every booking is one of three statuses: **confirmed**, **cancelled**, or **compl
 
 **Why no `pending`?** Booking here is all-or-nothing: the patient taps Confirm, and the server either saves a **confirmed** booking or rejects the request (slot taken, overlap, etc.) due to the MVP constraints of scenarios such as no payment step, no admin approval, nothing that needs to sit in a "waiting" state. Adding `pending` would mean handling half-finished bookings and it's decided to be not in this scope of this assessment for now.
 
-![Booking states and transitions](docs/Booking_States_Transitions.png)
+Booking states and transitions
 
 
 | Transition                | Who               | Why this rule                                                                                                                                                                   |
@@ -592,7 +635,7 @@ Edge cases known and **not** handled (deliberate scope calls):
 
 | Limitation                                       | Details                                                                                                                                                                                                                     |
 | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| No automated tests                               | Highest-value addition: integration test firing N concurrent booking requests at one slot and asserting exactly one succeeds.                                                                                               |
+| Minimal automated tests                          | One integration check exists — `npm test` fires 5 concurrent bookings at one slot and asserts exactly one succeeds (see Tests). No unit or E2E suite beyond it for now due to time constraints.                             |
 | No signup/registration                           | Users are preseeded; the design (single `users` table, role enum) transitions cleanly to self-registration later when there's user and role management feature added later.                                                 |
 | No doctor scheduling                             | Doctors implicitly work all clinic hours — no shifts, leave, or off-days. Slot generation is seed-time only (20-day window); a real deployment needs a scheduled job to extend it. Doctors will hate working here (for now) |
 | Fixed 30-minute slots                            | Consultations running over into the next slot aren't handled.                                                                                                                                                               |
