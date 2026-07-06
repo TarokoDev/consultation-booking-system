@@ -30,6 +30,12 @@ export async function createBooking(slotId: number, patientId: number, notes: st
       throw new BookingNotFoundError("Slot not found");
     }
 
+    // Server-side guard against booking an elapsed slot
+    if (new Date(slotResult.rows[0].start_time) <= new Date()) {
+      await client.query("ROLLBACK");
+      throw new BookingConflictError("This slot has already passed");
+    }
+
     // Check if the slot is already booked
     const existing = await client.query(
       `SELECT id FROM bookings

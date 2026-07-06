@@ -3,12 +3,14 @@ import { pool } from "../../db";
 export async function getAvailableSlots(doctorId: string, date: string) {
 
   // Select all available slots for the doctor on a given date
-  // Available slots are slots that are not booked by any patient
+  // Available slots are slots that are not booked by any patient.
+  // start_time > now() excludes today's already-elapsed slots — a patient can't book an appointment that has already started.
   const result = await pool.query(
     `SELECT s.id, s.start_time, s.end_time
      FROM slots s
      WHERE s.doctor_id = $1
        AND s.start_time::date = $2::date
+       AND s.start_time > now()
        AND s.deleted_at IS NULL
        AND NOT EXISTS (
          SELECT 1 FROM bookings b

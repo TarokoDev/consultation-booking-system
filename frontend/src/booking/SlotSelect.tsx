@@ -67,10 +67,12 @@ export function SlotSelect({ doctor, date, onSelectSlot }: Props) {
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {slots.map((slot) => {
               const conflict = overlaps(slot, bookedTimes);
+              const isPast = new Date(slot.start_time).getTime() <= Date.now(); // Server-side guard against booking an elapsed slot
               return (
                 <button
                   key={slot.id}
                   type="button"
+                  disabled={isPast}
                   onClick={() => {
                     if (conflict) {
                       toast.warning("You already have a booking at this time. Please select another slot.");
@@ -78,7 +80,7 @@ export function SlotSelect({ doctor, date, onSelectSlot }: Props) {
                       onSelectSlot(slot);
                     }
                   }}
-                  className={`btn min-h-[44px] ${conflict ? "btn-outline opacity-40 cursor-not-allowed" : "btn-outline"}`}
+                  className={`btn min-h-[44px] btn-outline ${isPast || conflict ? "opacity-40 cursor-not-allowed" : ""}`}
                 >
                   {formatSlotTime(slot.start_time)}
                 </button>
