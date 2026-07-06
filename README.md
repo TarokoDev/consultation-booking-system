@@ -68,7 +68,7 @@ The system models a single physical clinic with a small roster of doctors. Under
 
 Before building, I sketched the full UI/UX as a wireframe prototype — patient and doctor flows, including the conflict, empty, and error states. The implemented app follows it closely:
 
-Initial UI/UX wireframe prototype
+![UI/UX wireframe prototype — patient and doctor flows](docs/UIUX_wireframe_prototype.png)
 
 **Patient — book an appointment** (the core flow):
 
@@ -467,7 +467,7 @@ Booking conflicts return `409` with an error message; the frontend uses this to 
 
 Three tables (see `backend/migrations/000_init.sql` for the full commented DDL):
 
-ERD diagram
+![Entity-relationship diagram of users, slots, and bookings](docs/ERD.png)
 
 
 | Table      | What it stores                            | Notable details                                                                                                                                                                                                                         |
@@ -510,7 +510,7 @@ Every booking is one of three statuses: **confirmed**, **cancelled**, or **compl
 
 **Why no `pending`?** Booking here is all-or-nothing: the patient taps Confirm, and the server either saves a **confirmed** booking or rejects the request (slot taken, overlap, etc.) due to the MVP constraints of scenarios such as no payment step, no admin approval, nothing that needs to sit in a "waiting" state. Adding `pending` would mean handling half-finished bookings and it's decided to be not in this scope of this assessment for now.
 
-Booking states and transitions
+![Booking states and transitions](docs/Booking_States_Transitions.png)
 
 
 | Transition                | Who               | Why this rule                                                                                                                                                                   |
