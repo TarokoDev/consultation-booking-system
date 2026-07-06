@@ -3,6 +3,7 @@ import { DayPicker } from "react-day-picker";
 import "react-day-picker/style.css";
 import type { Doctor } from "../api/types";
 import { formatFullName } from "../utils/formatName";
+import { CLINIC_CLOSED_DAYS, getOpeningDaysSummary } from "../utils/clinicHours";
 import { formatShortDate } from "../utils/formatDateTime";
 
 interface Props {
@@ -17,7 +18,19 @@ export function DateSelect({ doctor, selectedDate, onViewSlots }: Props) {
 
   return (
     <div className="mx-auto w-full max-w-lg space-y-4 p-4">
-      <h2 className="text-lg font-semibold">{formatFullName(doctor)}</h2>
+      <div>
+        <h2 className="text-lg font-semibold">{formatFullName(doctor)}</h2>
+        <div className="mt-2 space-y-1 text-sm text-gray-500">
+          <p className="font-medium text-gray-600">Opening days</p>
+          <ul className="space-y-0.5">
+            {getOpeningDaysSummary().map(({ days, hours }) => (
+              <li key={days}>
+                <span className="text-gray-600">{days}:</span> {hours}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
 
       <div className="relative">
         <label className="mb-1 block text-sm font-medium text-gray-700">Select Date</label>
@@ -38,7 +51,7 @@ export function DateSelect({ doctor, selectedDate, onViewSlots }: Props) {
                 setDate(selected);
                 setIsCalendarOpen(false);
               }}
-              disabled={{ before: new Date() }}
+              disabled={{ before: new Date(), dayOfWeek: [...CLINIC_CLOSED_DAYS] }}
             />
           </div>
         )}

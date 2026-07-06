@@ -6,6 +6,20 @@ function formatClinicTime(hour: number, minute = 0): string {
   });
 }
 
+const WEEKDAY_HOURS = `${formatClinicTime(8)} – ${formatClinicTime(13, 0)}, ${formatClinicTime(14, 0)} – ${formatClinicTime(17, 0)}`;
+const SATURDAY_HOURS = `${formatClinicTime(8)} – ${formatClinicTime(13, 0)}`;
+
+export const CLINIC_CLOSED_DAYS = [0] as const; // Sunday
+
+/** General opening schedule for the date-picker step. */
+export function getOpeningDaysSummary(): { days: string; hours: string }[] {
+  return [
+    { days: "Mon – Fri", hours: WEEKDAY_HOURS },
+    { days: "Sat", hours: SATURDAY_HOURS },
+    { days: "Sun", hours: "Closed" },
+  ];
+}
+
 /** Opening hours for the selected date (matches backend seed SHIFTS). */
 export function getOpeningHoursLabel(date: Date): string {
   const day = date.getDay(); // 0 = Sun, 6 = Sat
@@ -14,13 +28,9 @@ export function getOpeningHoursLabel(date: Date): string {
     return "Closed on Sundays";
   }
 
-  const morningEnd = formatClinicTime(13, 0);
-
   if (day === 6) {
-    return `Opening hours: ${formatClinicTime(8)} – ${morningEnd}`;
+    return `Opening hours: ${SATURDAY_HOURS}`;
   }
 
-  const afternoonStart = formatClinicTime(14, 0);
-  const afternoonEnd = formatClinicTime(17, 0);
-  return `Opening hours: ${formatClinicTime(8)} – ${morningEnd}, ${afternoonStart} – ${afternoonEnd}`;
+  return `Opening hours: ${WEEKDAY_HOURS}`;
 }
