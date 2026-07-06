@@ -1,6 +1,9 @@
 import { pool } from "../../db";
 
 export async function getAvailableSlots(doctorId: string, date: string) {
+
+  // Select all available slots for the doctor on a given date
+  // Available slots are slots that are not booked by any patient
   const result = await pool.query(
     `SELECT s.id, s.start_time, s.end_time
      FROM slots s
