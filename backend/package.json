@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "tsx watch src/index.ts",
     "seed": "tsx seed/seed.ts",
-    "seed:history": "tsx seed/seed_history.ts"
+    "seed:history": "tsx seed/seed.ts --history"
   },
   "keywords": [],
   "author": "",
