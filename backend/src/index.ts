@@ -13,7 +13,11 @@ const PORT = process.env.PORT || 3000;
 
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
+    // Locked to the frontend origin when FRONTEND_URL is set (production);
+    // reflects any origin when unset (local dev) so a missing env var can't
+    // silently disable CORS. Auth is a Bearer header, not cookies, so the
+    // permissive dev fallback doesn't enable CSRF.
+    origin: process.env.FRONTEND_URL ?? true,
     credentials: true,
   })
 );
