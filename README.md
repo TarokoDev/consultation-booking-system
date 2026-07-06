@@ -8,6 +8,8 @@ A simplified consultation booking system built for the Rapidr take-home assessme
 
 **App:** [https://rapidr-consultation-booking-system.netlify.app](https://rapidr-consultation-booking-system.netlify.app)
 
+The live deployment is built from the `prod` branch. Work happens on `main` and is promptly merged into `prod`, so the two are kept in sync — what you see live matches the latest code.
+
 Log in with any of the [demo accounts](#demo-accounts) — e.g. patient `alice_goh@godoc.test` / `password123`.
 
 > Note: the backend runs on Render's free tier, which spins down when idle — the first request after a quiet period can take up to a minute while the instance wakes. Requests after that are fast.
