@@ -15,29 +15,35 @@ export class BookingNotFoundError extends Error {
 }
 
 export async function createBooking(slotId: number, patientId: number, notes: string) {
-  const client = await pool.connect();
+  const client = await pool.connect(); // Only one client at a time
   try {
     await client.query("BEGIN");
 
+    // Check if the slot is available
     const slotResult = await client.query(
-      "SELECT id, start_time, end_time FROM slots WHERE id = $1 AND deleted_at IS NULL FOR UPDATE",
+      "SELECT id, start_time, end_time FROM slots WHERE id = $1 AND deleted_at IS NULL FOR UPDATE", 
       [slotId]
     );
+    // Reject if the slot doesn't exist or was soft-deleted
     if (slotResult.rows.length === 0) {
       await client.query("ROLLBACK");
       throw new BookingNotFoundError("Slot not found");
     }
 
+    // Check if the slot is already booked
     const existing = await client.query(
       `SELECT id FROM bookings
        WHERE slot_id = $1 AND status IN ('confirmed', 'completed') AND deleted_at IS NULL`,
       [slotId]
     );
+
+    // throw an error if the slot is already booked
     if (existing.rows.length > 0) {
       await client.query("ROLLBACK");
       throw new BookingConflictError("This slot is already booked");
     }
 
+    // Check if the slot is overlapping with any existing bookings, if so throw an error
     const { start_time, end_time } = slotResult.rows[0];
     const overlap = await client.query(
       `SELECT b.id FROM bookings b
@@ -54,6 +60,7 @@ export async function createBooking(slotId: number, patientId: number, notes: st
       throw new BookingConflictError("You already have a booking at this time");
     }
 
+    // Create the booking
     const insertResult = await client.query(
       `INSERT INTO bookings (slot_id, patient_id, status, notes)
        VALUES ($1, $2, 'confirmed', $3)
@@ -61,9 +68,12 @@ export async function createBooking(slotId: number, patientId: number, notes: st
       [slotId, patientId, notes]
     );
 
+    // Commit the transaction
     await client.query("COMMIT");
+    // Return the booking
     return insertResult.rows[0];
   } catch (err: any) {
+    // Rollback the transaction if an error occurs
     await client.query("ROLLBACK");
     if (err.code === "23505") {
       throw new BookingConflictError("This slot is already booked");
@@ -75,6 +85,7 @@ export async function createBooking(slotId: number, patientId: number, notes: st
 }
 
 export async function getPatientUpcoming(patientId: number) {
+  // Select all upcoming bookings for the patient with the doctor details sorted by start time
   const result = await pool.query(
     `SELECT
        b.id, b.status, b.created_at, b.notes,
@@ -99,6 +110,8 @@ export async function getPatientUpcoming(patientId: number) {
 }
 
 export async function getPatientPast(patientId: number) {
+
+  // Select all past bookings for the patient with the doctor details sorted by start time
   const result = await pool.query(
     `SELECT
        b.id, b.status, b.created_at, b.notes,
@@ -122,6 +135,8 @@ export async function getPatientPast(patientId: number) {
 }
 
 export async function getPatientBookedTimes(patientId: number, date: string) {
+
+  // Select all booked times for the patient on a given date
   const result = await pool.query(
     `SELECT s.start_time, s.end_time
      FROM bookings b
@@ -136,6 +151,8 @@ export async function getPatientBookedTimes(patientId: number, date: string) {
 }
 
 export async function cancelBooking(bookingId: number, patientId: number) {
+
+  // Cancel the booking
   const result = await pool.query(
     `UPDATE bookings SET status = 'cancelled'
      WHERE id = $1 AND patient_id = $2 AND status = 'confirmed' AND deleted_at IS NULL`,
@@ -148,7 +165,10 @@ export async function cancelBooking(bookingId: number, patientId: number) {
 
 // date: SGT local date string "YYYY-MM-DD". Defaults to today (SGT).
 export async function getDoctorUpcoming(doctorId: number, date?: string) {
+
   const sgDate = date ?? new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Singapore" });
+
+  // Select all upcoming bookings for the doctor with the patient details sorted by start time
   const result = await pool.query(
     `SELECT
        b.id, b.status, b.created_at, b.notes,
@@ -172,6 +192,8 @@ export async function getDoctorUpcoming(doctorId: number, date?: string) {
 }
 
 export async function getDoctorPast(doctorId: number) {
+
+  // Select all past bookings for the doctor with the patient details sorted by start time
   const result = await pool.query(
     `SELECT
        b.id, b.status, b.created_at, b.notes,
@@ -197,6 +219,8 @@ export async function getDoctorPast(doctorId: number) {
 // Returns distinct SGT dates ("YYYY-MM-DD") that have at least one confirmed
 // booking for the doctor in the given year-month (e.g. "2026-07").
 export async function getDoctorBookedDatesInMonth(doctorId: number, yearMonth: string) {
+
+  // Select all distinct SGT dates that have at least one confirmed booking for the doctor in the given year-month
   const result = await pool.query<{ date: string }>(
     `SELECT DISTINCT
        to_char(s.start_time AT TIME ZONE 'Asia/Singapore', 'YYYY-MM-DD') AS date
@@ -213,6 +237,8 @@ export async function getDoctorBookedDatesInMonth(doctorId: number, yearMonth: s
 }
 
 export async function completeBooking(bookingId: number, doctorId: number) {
+
+  // Doctor marks the appointment as completed as a form of conclusion of the consultation
   const result = await pool.query(
     `UPDATE bookings b SET status = 'completed'
      FROM slots s
