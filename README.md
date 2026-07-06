@@ -27,6 +27,7 @@ The database is a Render-hosted PostgreSQL instance. No real secrets are committ
 - [Repository structure](#repository-structure)
 - [Getting started](#getting-started)
 - [Demo accounts](#demo-accounts)
+- [How to use the app](#how-to-use-the-app)
 - [Features by role](#features-by-role)
 - [API reference](#api-reference)
 - [Database schema](#database-schema)
@@ -67,7 +68,7 @@ The system models a single physical clinic with a small roster of doctors. Under
 
 Before building, I sketched the full UI/UX as a wireframe prototype — patient and doctor flows, including the conflict, empty, and error states. The implemented app follows it closely:
 
-![Initial UI/UX wireframe prototype](docs/UIUX_wireframe_prototype.png)
+Initial UI/UX wireframe prototype
 
 **Patient — book an appointment** (the core flow):
 
@@ -94,24 +95,24 @@ Before building, I sketched the full UI/UX as a wireframe prototype — patient 
 
 **Admin:**
 
-- Logs in to a view-only dashboard. Intentionally minimal in the MVP (see limitations) — the role and route-gating exist so read-only oversight views can be added without auth changes.
+- Logs in to a view-only dashboard: browse all users with a Patients/Doctors tab filter, click a user to see their profile and their bookings split into Upcoming and History. Strictly read-only — no create/edit/delete.
 
 Product-level gaps (no reminders, no walk-in handling, no doctor cancellations) are listed under [Known limitations / future work](#known-limitations--future-work).
 
 ## Tech stack & why
 
 
-| Layer      | Choice                                                  | Reasoning                                                                                                                                               |
-| ---------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Frontend   | React 19 + Vite + TypeScript                            | Fast iteration, typed API layer shared with backend response shapes                                                                                     |
-| Styling    | Tailwind CSS 4 + DaisyUI                                | Utility-first speed for an MVP; DaisyUI for accessible prebuilt components                                                                              |
-| Backend    | Node.js + Express 5 + TypeScript                        | Small, well-understood surface; no framework magic hiding the concurrency logic (the core of this assessment)                                           |
-| Database   | PostgreSQL (`pg` driver, raw SQL)                       | Real transactional guarantees (`SELECT ... FOR UPDATE`, partial unique indexes). Raw SQL over an ORM so the locking strategy is explicit and reviewable |
-| Auth       | JWT (Bearer token) + bcrypt                             | Stateless, simple to reason about for an MVP                                                                                                            |
-| Deployment | Netlify (frontend) + Render (backend + hosted Postgres) | Free-tier friendly, matches the brief's suggested targets                                                                                               |
+| Layer      | Choice                                                  | Reasoning                                                                                                                                                                             |
+| ---------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Frontend   | React 19 + Vite + TypeScript                            | Familiarity, Fast iteration, typed API layer shared with backend response shapes                                                                                                      |
+| Styling    | Tailwind CSS 4 + DaisyUI                                | Utility-first speed for an MVP; DaisyUI for accessible prebuilt components for speedier implementation and eliminates design fatigue / making custom components                       |
+| Backend    | Node.js + Express 5 + TypeScript                        | familiar with this better than fast-api/python framework from experience                                                                                                              |
+| Database   | PostgreSQL (`pg` driver, raw SQL)                       | Familiar and real transactional guarantees (`SELECT ... FOR UPDATE`, partial unique indexes). Raw SQL over an ORM so the locking strategy is explicit and reviewable                  |
+| Auth       | JWT (Bearer token) + bcrypt                             | Stateless, simple for MVP. The primary focus was to do the core features such as patient/doctor flows, auth can be reinforced later depending on direction of project moving forward. |
+| Deployment | Netlify (frontend) + Render (backend + hosted Postgres) | Free-tier friendly, matches the brief's suggested targets                                                                                                                             |
 
 
-No ORM and no migration framework: the schema is 3 tables in one commented SQL file (`backend/migrations/000_init.sql`), applied once to a fresh database. A migration runner with a tracking table is the right tool once a schema evolves in production, but here it would add a dependency that obscures the locking behaviour being assessed.
+The schema is 3 tables in one commented SQL file (`backend/migrations/000_init.sql`), applied once to a fresh database. 
 
 ## Repository structure
 
@@ -124,7 +125,7 @@ consultation-booking-system/
 │       ├── index.ts       # Express app entry
 │       ├── db.ts          # pg Pool
 │       ├── middleware/    # requireAuth / requireRole (JWT)
-│       └── features/      # Feature-sliced: auth, doctors, slots, bookings
+│       └── features/      # Feature-sliced: auth, doctors, slots, bookings, admin
 │           └── bookings/  # createBooking (concurrency-critical path),
 │                          # patient.routes.ts, doctor.routes.ts
 └── frontend/
@@ -186,6 +187,7 @@ npm run dev            # tsx watch, http://localhost:3000
 cd frontend
 npm install
 cp .env.example .env   # VITE_API_URL, defaults to http://localhost:3000
+# (optional for local dev — vite.config.ts proxies API routes to :3000; required for production builds)
 npm run dev            # http://localhost:5173
 ```
 
@@ -211,6 +213,30 @@ All seeded accounts use the password `password123`.
 
 Slots follow Singapore clinic hours: Mon–Fri 08:00–13:00 and 14:00–17:00, Sat 08:00–13:00, closed Sunday. 30-minute blocks, generated for a 20-day rolling window from the seed date (`Asia/Singapore` wall-clock time).
 
+## How to use the app
+
+Works the same on the [live demo](#live-demo) or a local run. All passwords are `password123`.
+
+**As a patient** (e.g. `alice_goh@godoc.test`):
+
+1. Log in → **Book** a consultation: pick a doctor → pick a date → pick a time slot → write a short reason for visit → confirm.
+2. **Upcoming** tab: see the booking you just made; cancel it from here if needed.
+3. **History** tab: past completed/cancelled visits (run `npm run seed:history` locally to populate, already populated on live).
+
+**As a doctor** (e.g. `pamela_goh@godoc.test`):
+
+1. Log in → today's appointments are listed; use the calendar to jump to other days (dates with bookings are highlighted).
+2. Once an appointment's start time has passed, press **Mark as complete**.
+3. **History** tab: everything already seen or cancelled.
+
+**Try the double-booking race** (the core of this assessment):
+
+1. Open two browsers (or one normal + one incognito) and log in as two different patients.
+2. In both, navigate to the *same doctor, date, and slot*, up to the confirm screen.
+3. Confirm in browser A, then confirm in browser B → B gets a "slot already booked" dialog and is sent back to a refreshed slot list. Exactly one booking exists.
+
+**As admin** (`carol_ng@godoc.test`): switch between the Patients and Doctors tabs, pick any user to view their details and their upcoming/past bookings. View-only — admins can't modify anything (for now).
+
 ## Features by role
 
 **Patient**
@@ -230,7 +256,9 @@ Slots follow Singapore clinic hours: Mon–Fri 08:00–13:00 and 14:00–17:00, 
 
 **Admin**
 
-- View-only dashboard (intentionally minimal — see trade-offs)
+- View all users, filterable by role (Patients / Doctors tabs)
+- Drill into any user: profile details plus their bookings, split into Upcoming and History
+- Strictly view-only — no user or booking management (see trade-offs)
 
 ## API reference
 
@@ -254,6 +282,8 @@ All routes except `/auth/login` and `/health` require `Authorization: Bearer <to
 | `GET`   | `/bookings/doctor/upcoming?date=`      | doctor  | Confirmed bookings for a day (defaults to today, SGT)                 |
 | `GET`   | `/bookings/doctor/past`                | doctor  | Past appointments                                                     |
 | `PATCH` | `/bookings/doctor/:id/complete`        | doctor  | Mark booking completed (only if slot has started)                     |
+| `GET`   | `/admin/users?role=`                   | admin   | List users, optional role filter (`patient` / `doctor` / `admin`)     |
+| `GET`   | `/admin/users/:id/bookings`            | admin   | All bookings where the user is the patient or the doctor              |
 
 
 Booking conflicts return `409` with an error message; the frontend uses this to trigger the slot-conflict modal.
@@ -401,6 +431,38 @@ Booking conflicts return `409` with an error message; the frontend uses this to 
 //       (not this doctor's, not confirmed, or the slot hasn't started yet)
 ```
 
+`GET /admin/users?role=doctor` (admin)
+
+```jsonc
+// 200
+{
+  "users": [
+    { "id": 2, "title": "Dr.", "first_name": "Pamela", "middle_name": null, "last_name": "Goh",
+      "email": "pamela_goh@godoc.test", "role": "doctor", "specialty": "General Practice",
+      "created_at": "2026-07-04T21:44:25.000Z" }
+  ]
+}
+// 400 — { "error": "role must be one of: patient, doctor, admin" }
+```
+
+`GET /admin/users/5/bookings` (admin)
+
+```jsonc
+// 200 — bookings where user 5 is either the patient or the doctor; both parties' names included
+{
+  "bookings": [
+    {
+      "id": 277, "status": "confirmed", "notes": "Stomach Ache", "created_at": "2026-07-05T16:36:10.601Z",
+      "slot_id": 4, "start_time": "2026-07-06T01:30:00.000Z", "end_time": "2026-07-06T02:00:00.000Z",
+      "doctor_id": 2, "doctor_title": "Dr.", "doctor_first_name": "Pamela",
+      "doctor_middle_name": null, "doctor_last_name": "Goh", "doctor_specialty": "General Practice",
+      "patient_id": 5, "patient_title": null, "patient_first_name": "Alice",
+      "patient_middle_name": null, "patient_last_name": "Goh"
+    }
+  ]
+}
+```
+
 ## Database schema
 
 Three tables (see `backend/migrations/000_init.sql` for the full commented DDL):
@@ -470,9 +532,9 @@ Booking states and transitions
 | Soft deletes everywhere (`deleted_at`)   | For audit purposes, useful for admin dashboards, see more paper trail, see docs who lepaks, etc. kidding.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Timezone discipline                      | For simplicity, for now its set to `Asia/Singapore` since the app would only be used in Singapore.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | JWT in localStorage with Bearer header   | Initial idea was to use a microservice such as Supabase for built-in authentication module, but since user data is gonna be seeded and if we were to scale and make changes, I thought to create a simple JWT with bearer header would be doable and faster to implement first to quickly finish the auth part of the app, so i can focus on the actual user flows such as making bookings, etc. Simple and works across the Netlify/Render split without cross-site cookie configuration. Trade-off: susceptible to token theft via XSS; production would use httpOnly cookies with proper `SameSite`/CORS, or short-lived tokens with refresh rotation. |
-| Admin is view-only                       | The admin could view things such as user data and profiles, see their schedules, appointments, etc. But for now I decided it's not so important to the core flow as the app is mainly used by patients and doctors. As the app grows, admin would have more rights such as being able to manage users, create slots on UI, interfere with status change such as cancel appointment for user, etc.                                                                                                                                                                                                                                                         |
+| Admin is view-only                       | The admin can view user data and profiles and drill into each user's appointments and history (Patients/Doctors tabs → user → bookings), but stays strictly read-only. Management rights aren't core to the flow since the app is mainly used by patients and doctors. As the app grows, admin would get more rights such as managing users, creating slots on UI, and interfering with status changes such as cancelling an appointment for a user.                                                                                                                                                                                                      |
 | Deployment to live                       | Decided to use Render for backend deployment and Netlify for frontend. Postgres is hosted on Render as well, not stored locally. Since the end goal is to make it live so users can use it immediately on the web, I chose Netlify and Render for its simplicity, free-tiers, and familiarity with my experience in deploying personal apps to the web.                                                                                                                                                                                                                                                                                                   |
-| Live deployment over Docker              | Considered Docker (docker-compose with Postgres + backend + frontend) for reproducible local setup, but given the deadline and my unfamiliarity with Docker, I prioritised a live deployment instead — the assessor can use the app immediately via the link, no local setup at all. Local setup still works via the Getting started steps; a docker-compose (even just a Postgres-only one) is the natural next step for contributor onboarding. |
+| Live deployment over Docker              | Considered Docker (docker-compose with Postgres + backend + frontend) for reproducible local setup, but given the deadline and my unfamiliarity with Docker, I prioritised a live deployment instead — the assessor can use the app immediately via the link, no local setup at all. Local setup still works via the Getting started steps; a docker-compose (even just a Postgres-only one) is the natural next step for contributor onboarding.                                                                                                                                                                                                         |
 
 
 ### UI/UX flows & edge cases
@@ -522,7 +584,7 @@ The core MVP features do the work and can be scaled to be better. For now, if th
 | No notifications or reminders                    | No email/SMS confirmations; patients and doctors see state changes only when they open the app. Will implement websockets or another if it's a core requirement.                                                            |
 | No doctor-initiated cancellation or rescheduling | If a doctor becomes unavailable, there is no in-app path to notify or rebook affected patients.                                                                                                                             |
 | No no-show handling                              | A past booking left `confirmed` just stays that way; no automatic transition or follow-up.                                                                                                                                  |
-| Admin dashboard is a placeholder                 | Routing and role-gating exist; read-only views (user lists, booking overviews) are not built out.                                                                                                                           |
+| Admin is read-only                               | Admin can browse users and their bookings but can't manage them — no user CRUD, no booking overrides, no slot creation from the UI.                                                                                         |
 | No pagination or sorting on list endpoints       | If time permits or its a core requirement can add pagination to endpoints and UI.                                                                                                                                           |
 
 

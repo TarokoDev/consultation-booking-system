@@ -11,6 +11,7 @@ export default defineConfig({
       '/doctors': { target: 'http://localhost:3000', changeOrigin: true },
       '/slots': { target: 'http://localhost:3000', changeOrigin: true },
       '/bookings': { target: 'http://localhost:3000', changeOrigin: true },
+      '/admin': { target: 'http://localhost:3000', changeOrigin: true },
     },
   }
 })

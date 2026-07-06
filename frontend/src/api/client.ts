@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { Booking, BookingWithSlot, DoctorBookingView, Doctor, Slot, User } from "./types";
+import type { AdminUser, AdminUserBooking, Booking, BookingWithSlot, DoctorBookingView, Doctor, Slot, User } from "./types";
 
 export class ApiError extends Error {
   status?: number;
@@ -103,5 +103,17 @@ export async function getDoctorPastBookings() {
 
 export async function markBookingComplete(id: number) {
   const res = await http.patch<{ message: string }>(`/bookings/doctor/${id}/complete`);
+  return res.data;
+}
+
+export async function getAdminUsers(role?: "patient" | "doctor" | "admin") {
+  const res = await http.get<{ users: AdminUser[] }>("/admin/users", {
+    params: role ? { role } : undefined,
+  });
+  return res.data;
+}
+
+export async function getAdminUserBookings(userId: number) {
+  const res = await http.get<{ bookings: AdminUserBooking[] }>(`/admin/users/${userId}/bookings`);
   return res.data;
 }
