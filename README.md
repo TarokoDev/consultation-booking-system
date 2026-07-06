@@ -76,7 +76,7 @@ The system models a single physical clinic with a small roster of doctors. Under
 
 Before building, I sketched the full UI/UX as a wireframe prototype — patient and doctor flows, including the conflict, empty, and error states. The implemented app follows it closely:
 
-UI/UX wireframe prototype — patient and doctor flows
+![UI/UX wireframe prototype — patient and doctor flows](docs/UIUX_wireframe_prototype.png)
 
 **Patient — book an appointment** (the core flow):
 
@@ -272,7 +272,7 @@ Works the same on the [live demo](#live-demo) or a local run. All passwords are 
 2. Once an appointment's start time has passed, press **Mark as complete**.
 3. **History** tab: everything already seen or cancelled.
 
-**Try the double-booking race** (the core of this assessment):
+**Try the double-booking race** (for fun):
 
 1. Open two browsers (or one normal + one incognito) and log in as two different patients.
 2. In both, navigate to the *same doctor, date, and slot*, up to the confirm screen.
@@ -528,6 +528,8 @@ Booking conflicts return `409` with an error message; the frontend uses this to 
 
 Three tables (see `backend/migrations/000_init.sql` for the full commented DDL):
 
+![Entity-relationship diagram of users, slots, and bookings](docs/ERD.png)
+
 Entity-relationship diagram of users, slots, and bookings
 
 
@@ -571,7 +573,7 @@ Every booking is one of three statuses: **confirmed**, **cancelled**, or **compl
 
 **Why no `pending`?** Booking here is all-or-nothing: the patient taps Confirm, and the server either saves a **confirmed** booking or rejects the request (slot taken, overlap, etc.) due to the MVP constraints of scenarios such as no payment step, no admin approval, nothing that needs to sit in a "waiting" state. Adding `pending` would mean handling half-finished bookings and it's decided to be not in this scope of this assessment for now.
 
-Booking states and transitions
+![Booking states and transitions](docs/Booking_States_Transitions.png)
 
 
 | Transition                | Who               | Why this rule                                                                                                                                                                   |
