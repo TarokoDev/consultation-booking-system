@@ -3,6 +3,7 @@ import { toast } from "react-toastify";
 import { getSlots, getBookedTimes } from "../api/client";
 import type { Doctor, Slot } from "../api/types";
 import { formatFullName } from "../utils/formatName";
+import { getOpeningHoursLabel } from "../utils/clinicHours";
 import { formatLongDate, formatSlotTime } from "../utils/formatDateTime";
 import { toDateParam } from "./types";
 
@@ -47,9 +48,12 @@ export function SlotSelect({ doctor, date, onSelectSlot }: Props) {
 
   return (
     <div className="mx-auto w-full max-w-lg space-y-4 p-4">
-      <h2 className="text-lg font-semibold">
-        {formatFullName(doctor)} - {formatLongDate(date)}
-      </h2>
+      <div>
+        <h2 className="text-lg font-semibold">
+          {formatFullName(doctor)} - {formatLongDate(date)}
+        </h2>
+        <p className="mt-1 text-sm text-gray-500">{getOpeningHoursLabel(date)}</p>
+      </div>
 
       {isLoading ? (
         <div className="p-4 text-sm text-gray-500">Loading slots...</div>
